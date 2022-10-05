@@ -1,0 +1,49 @@
+.nav-tabs-title {
+    font-size: 20px;
+    color: white;
+}
+
+::ng-deep .mat-tooltip {
+    /* your own custom styles here */
+    /* e.g. */
+    background-color: rgb(236, 232, 235);
+    font-size: 12px;
+    font-weight: bold;
+    color: rgb(255, 255, 255);
+}
+
+.red-color {
+    color: rgb(255, 255, 255);
+}
+
+.table-condensed {
+    font-size: 15px;
+}
+
+.input-group {
+    color: white;
+}
+
+.glyphicon {
+    color: white;
+}
+
+.search-hero {
+    max-width: 800px;
+    padding-bottom: 10px;
+    margin: auto;
+}
+
+.form-control {
+    box-shadow: 0 5px 20px 0 rgb(202, 150, 193);
+    color: white;
+    width: 200px;
+    ;
+}
+
+.form-control::placeholder {
+    font-family: FontAwesome;
+}
+
+
+

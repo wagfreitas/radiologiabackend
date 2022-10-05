@@ -1,0 +1,126 @@
+
+{
+
+  "Posts": {
+
+    "postId_1": {
+
+      "creationDate": "15 of october, 2017 11:17:25 UTC+2",
+      "commentsCount": 1,
+      "likesCount": 1,
+      "content": "content",
+      "author": {
+        "fullname": "User 1",
+        "photoUrl": "https://.....",
+        "uid": "userId_1"
+      },
+   
+      "Comments": {
+      
+        "commentId_1 ": {
+          "author": {
+            "fullname": "User 2",
+            "photoUrl": "https://.....",
+            "uid": "userId_2"
+          },
+          "postAuthorId": "userId_1",
+          "text": "Test comment",
+          "timestamp": "15 of october, 2017 15:17:25 UTC+2"
+        }
+      },
+      "Likes": {
+        Documents
+        "likeId_1": {
+          "author": {
+            "fullname": "User 2",
+            "photoUrl": "https://.....",
+            "uid": "userId_2"
+          },
+          "postAuthorId": "userId_1",
+          "timestamp": "15 of october, 2017 15:17:25 UTC+2"
+        }
+      }
+    },
+    "postId_2": {},
+    "postId_3": {},
+ 
+    "PrivateUserData": {
+     
+      "userId_1": {
+        "accountCreationDate": "10 of october, 2017, 16:04:37 UTC+2",
+        "email": "test@gmail.com",
+        "photoUrl": "https://.....",
+        "lastLogin": "12 of october, 2017, 13:04:37 UTC+2",
+        "messagingTokens": [
+          "messagingToken_1",
+          "messagingToken_2"
+        ],
+               "Feed": {
+          "postId-1": {
+            "creationDate": "15 of october, 2017 11:17:25 UTC+2",
+            "commentsCount": 1,
+            "likesCount": 1,
+            "content": "content",
+            "author": {
+              "fullname": "User 1",
+              "photoUrl": "https://.....",
+              "uid": "userId_1"
+            }
+          },
+          "postId-2": {}
+        },
+             "Events": {
+          "eventId_1": {
+            "kind": "follow",
+            "interactionUserName": "User 2",
+            "interactionUserProfilePicture": "https://.....",
+            "interactionUserId": "userId_2",
+            "interactionRef": "userId_2",
+            "timestamp": "15 of october, 2017 11:17:25 UTC+2"
+          }
+        },
+              "AuthorOfComments": {
+          "commentId_1": {
+            "timeStamp": "15 of october, 2017 11:17:25 UTC+2"
+          }
+        },
+        "AuthorOfLikes": {
+          "likeId_1": {
+            "timeStamp": "15 of october, 2017 11:17:25 UTC+2"
+          }
+        },
+        "AuthorOfPosts": {
+          "postId_1": {
+            "timeStamp": "15 of october, 2017 11:17:25 UTC+2"
+          }
+        }
+      }
+    },
+    "userId_2": {},
+    "userId_3": {}
+  },
+  "PublicUserData": {
+    "userId_1": {
+      "followersCount": 3,
+      "followingCount": 1,
+      "photoUrl": "https://.....",
+      "username": "User 1",
+      "Followers": {
+           "userId_2": {
+          "photoUrl": "https://.....",
+          "username": "User 2"
+        }
+      },
+      "Following": {
+        "userId_3": {
+          "photoUrl": "https://.....",
+          "username": "User 3"
+        }
+      }
+    },
+    "userId_2": {
+    },
+    "userId_3": {
+    }
+  }
+}

@@ -1,0 +1,89 @@
+<div class="app-content content">
+  <div class="content-wrapper">
+    <div class="content-header row mb-1">
+      <app-breadcrumb class="col-12" [breadcrumb]="breadcrumb"></app-breadcrumb>
+    </div>
+    <div class="content-body">
+      <!-- Basic form layout section start -->
+      <section id="basic-form-layouts">
+        <div class="row" matchHeight="card">
+          <div class="col-md-11" *blockUI="'projectInfo'; message: 'Loading'">
+            <m-card [options]="options" (reloadFunction)="reloadProjectInfo($event)">
+              <ng-container mCardHeaderTitle>
+                Listagem de Cirurgias Registradas
+              </ng-container>
+              <ng-container mCardBody>
+                <div class="card-text">
+                  <p>Ë possível filtrar por qualquer campo</p>
+                </div>
+
+                <div class="example-container mat-elevation-z8">
+                  <div class="example-header">
+                    <mat-form-field>
+                      <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter">
+                    </mat-form-field>
+                  </div>
+
+                  <div class="table-wrapper" id="htmlData" #htmlData>
+                    <table class="table table-stripes table-borderless " mat-table [dataSource]="dataSource1"
+                      matSort #sortTable1="matSort">
+
+
+                      <ng-container matColumnDef="nome">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> NOME </th>
+
+                        <td mat-cell *matCellDef="let row"> {{row.firstName}} </td>
+                      </ng-container>
+
+                      <ng-container matColumnDef="tipoExame">
+                        <th mat-header-cell *matHeaderCellDef> EXAME </th>
+                        <td mat-cell *matCellDef="let row"> {{row.tipoexame }} </td>
+                      </ng-container>
+
+                      <ng-container matColumnDef="idade">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> IDADE </th>
+                        <td mat-cell *matCellDef="let row"> {{row.idade }} </td>
+                      </ng-container>
+
+                      <ng-container matColumnDef="data">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Data </th>
+                        <td mat-cell *matCellDef="let row"> {{row.data.seconds * 1000 | date: 'MM/dd/yyyy' }} </td>
+                      </ng-container>
+
+                       <ng-container matColumnDef="status">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Status </th>
+                        <td mat-cell *matCellDef="let row"> {{ row.status }} </td>
+                      </ng-container>
+
+
+                      <ng-container matColumnDef="acao">
+                        <th mat-header-cell *matHeaderCellDef> Ações </th>
+                        <td mat-cell *matCellDef="let row">
+                          <button mat-flat-button (click)="openPDF(row)">Baixar</button>
+                        </td>
+                      </ng-container>
+
+
+                      <tr mat-header-row *matHeaderRowDef="displayedColumns1"></tr>
+                      <tr mat-row *matRowDef="let row; columns: displayedColumns1"></tr>
+
+                    </table>
+
+                    <mat-paginator class="paginator" [pageSizeOptions]="[5, 10, 25]" [pageSize]="5">
+                    </mat-paginator>
+                  </div>
+
+                </div>
+
+
+              </ng-container>
+            </m-card>
+          </div>
+        </div>
+      </section>
+
+      <!-- // Basic form layout section end -->
+    </div>
+  </div>
+</div>
+<!-- ////////////////////////////////////////////////////////////////////////////-->

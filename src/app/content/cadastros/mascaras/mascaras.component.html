@@ -1,0 +1,155 @@
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row mb-1">
+           
+        </div>
+        <div class="content-body">
+            <!-- Basic form layout section start -->
+            <section id="basic-form-layouts">
+                <div class="row" matchHeight="card">
+                    <div class="col-md-11" *blockUI="'projectInfo'; message: 'Loading'">
+                        <m-card [options]="options">
+                            <ng-container mCardHeaderTitle>
+                                Cadastro de Máscara do Sistema da Imagem Radiologia
+                            </ng-container>
+                            <ng-container mCardBody>
+                                <form [formGroup]="maskForm" (ngSubmit)="manage(maskForm.value)">
+                                    <div class="form-body">
+
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group">
+                                                    <label for="nome">Nome da Máscara *</label>
+                                                    <input type="text" id="mascara" class="form-control"
+                                                        formControlName="mascara" placeholder="Nome da Máscara"
+                                                        [ngClass]="{ 'is-invalid': submitted && f.mascara.errors }" />
+                                                    <small class="form-text text-muted danger"
+                                                        *ngIf="submitted && f.mascara.errors" class="invalid-feedback">
+                                                        <div *ngIf=" f.mascara.errors.required">
+                                                            Nome da máscara é requerido</div>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <h4 class="form-section"><i class="feather ft-map-pin"></i> POSIÇÃO DO EXAME
+                                            (DIREITO, ESQUERDO, COSTAS, FRENTE, ETC)</h4>
+                                        <div formArrayName="examesposicao">
+
+                                            <div [formGroupName]="i"  *ngFor="let item of maskForm.get('examesposicao')['controls']; let i = index;">
+                                                <div class="row">
+                                                    <div class="col-md-9">
+                                                        <div class="form-group">
+                                                            <label for="exames" (click)="removeItem()">POSIÇÃO  {{i + 1 }}
+                                                                </label>
+                                                            <input type="text" id="exames" class="form-control"
+                                                                formControlName="exames" placeholder="Posição do Exame"
+                                                                [ngClass]="{ 'is-invalid': submitted && f.examesposicao.invalid }">
+                                                                <small class="form-text text-muted danger"
+                                                                *ngIf="submitted && f.examesposicao.invalid" class="invalid-feedback">
+                                                                <div >
+                                                                    Dê um valor para a posição criada</div>
+                                                            </small>
+
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                            <button  *ngIf="i > 0"  float-right type="button" (click)="removeExames(i)">X</button>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button float-right type="button" (click)="addExames()">+ NovoExame</button>
+                                            </div>
+                                        </div>
+                                        <hr/>
+                                        <h4 class="form-section"></h4>
+                                        <hr/>
+
+                                        <h4 class="form-section"><i class="feather ft-list"></i> LAUDOS</h4>
+                                        <div formArrayName="laudossiglas">
+
+                                            <div [formGroupName]="i"  *ngFor="let item of maskForm.get('laudossiglas')['controls']; let i = index;">
+                                                <div class="row">
+                                                    <div class="col-md-2">
+                                                        <div class="form-group">
+                                                            <label for="laudos">Sigla {{i+1}}:</label>
+                                                            <input type="text" id="laudos" class="form-control"
+                                                                formControlName="laudos" placeholder="Defina uma sigla"
+                                                                [ngClass]="{ 'is-invalid': submitted && f.laudossiglas.invalid }">
+                                                                <small class="form-text text-muted danger"
+                                                                *ngIf="submitted && f.laudossiglas.invalid" class="invalid-feedback">
+                                                                <div >
+                                                                   Os dois campos precisam ser preenchidos</div>
+                                                            </small>
+
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-7">
+                                                        <div class="form-group">
+                                                            <label for="descricao" >Descrição:</label>
+                                                            <input type="text" id="descricao" class="form-control"
+                                                                formControlName="descricao" placeholder="Defina uma descrição para a sigla ">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                            <button  *ngIf="i > 0"  float-right type="button" (click)="removeLaudos(i)">X</button>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button float-right type="button" (click)="addLaudos()">+ Novo</button>
+                                            </div>
+                                           
+                                        </div>
+
+                                        <hr/>
+                                        <h4 class="form-section"></h4>
+                                        <hr/>
+
+                                        <h4 class="form-section"><i class="feather ft-list"></i> DESCRIÇÕES DE LAUDOS</h4>
+                                        <div formArrayName="laudosdesc">
+
+                                            <div [formGroupName]="i"  *ngFor="let item of maskForm.get('laudosdesc')['controls']; let i = index;">
+                                                <div class="row">
+                                                    <div class="col-md-9">
+                                                        <div class="form-group">
+                                                            <label for="laudosmin">Descrição {{i+1}}:</label>
+                                                            <input type="text" id="laudosmin" class="form-control"
+                                                                formControlName="laudosmin" placeholder="Defina um descritivo para o laudo">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                            <button  *ngIf="i > 0"  float-right type="button" (click)="removeLaudosDesc(i)">X</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button float-right type="button" (click)="addLaudosDesc()">+ Novo</button>
+                                            </div>
+                                           
+                                        </div>
+
+                                        <div class="form-actions">
+                                            <button type="button" class="btn btn-warning mr-1">
+                                                <i class="feather ft-x"></i> Cancela
+                                            </button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="la la-check"></i> Confirma
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </ng-container>
+                        </m-card>
+                    </div>
+                </div>
+            </section>
+
+            <!-- // Basic form layout section end -->
+        </div>
+    </div>
+</div>
+<!-- ////////////////////////////////////////////////////////////////////////////-->
