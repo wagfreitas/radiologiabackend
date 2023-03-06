@@ -6,7 +6,6 @@ import { Router, ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-social-signin',
   templateUrl: './social-signin.component.html',
-  styleUrls: ['./social-signin.component.css']
 })
 export class SocialSigninComponent implements OnInit {
 

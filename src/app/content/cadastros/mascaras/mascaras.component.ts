@@ -12,6 +12,7 @@ export class MascarasComponent implements OnInit {
   submitted = false;
   maskForm: FormGroup;
   examesposicao: FormArray;
+  examesnormais: FormArray;
   laudossiglas: FormArray;
   laudosdesc: FormArray;
   dados = []
@@ -50,11 +51,8 @@ export class MascarasComponent implements OnInit {
      
      })
 
-     this.examesposicao.push([this.dados])
+    //this.examesposicao.push({this.dados})
      
-
-  
-
     console.log(this.examesposicao)
   }
 
@@ -68,6 +66,9 @@ export class MascarasComponent implements OnInit {
       examesposicao: this.fb.array([
         this.initExamesFields()
       ]), 
+      examesnormais: this.fb.array([
+        this.initExamesNormaisFields()
+      ]),
       laudossiglas: this.fb.array([
         this.initLaudosFields()
       ]), 
@@ -107,9 +108,7 @@ export class MascarasComponent implements OnInit {
   }
 
   addExames(): void {
-    console.log('aqui')
     this.examesposicao = this.maskForm.get('examesposicao') as FormArray;
-    console.log('exames',this.examesposicao)
     this.examesposicao.push(this.initExamesFields());
   }
 
@@ -117,6 +116,25 @@ export class MascarasComponent implements OnInit {
     this.examesposicao = this.maskForm.get('examesposicao') as FormArray;
     this.examesposicao.removeAt(i);
   }
+
+  removeExamesNormais(i: number): void {
+    this.examesnormais = this.maskForm.get('examesnormais') as FormArray;
+    this.examesnormais.removeAt(i);
+  }
+
+  addExamesNormais(): void {
+    this.examesnormais = this.maskForm.get('examesnormais') as FormArray;
+    this.examesnormais.push(this.initExamesNormaisFields());
+  }
+  
+  initExamesNormaisFields(): FormGroup {
+    return this.fb.group({
+      laudosnormais: ['', Validators.required],
+      btncolor: ['primary']
+    });
+  }
+
+
 
   initLaudosFields(): FormGroup{
     return this.fb.group({
@@ -165,23 +183,29 @@ export class MascarasComponent implements OnInit {
     this.submitted = true;
     
      if(!this.maskForm.valid) {
-       console.log("formulario Inválido", this.f.exames.invalid)
        return
      } else {
     this.final = {
      mascara: val.mascara,
      exames: val.examesposicao,
+     examesnormais: val.examesnormais, 
      laudosnorm: laudosnorm,
      laudos: val.laudossiglas,
      laudosmin: val.laudosdesc
 
    };
 
-    console.log('objetofinal', this.final);
-
      this.exameService.createMascara(val.mascara, this.final).then(res => {
-          console.log('resultado', res);
+          this.maskForm.reset();
      });
+
+     this.examesposicao.clear();
+     this.examesnormais.clear();
+     this.laudossiglas.clear();
+     this.laudosdesc.clear()
+
+
+
 
   }
   }

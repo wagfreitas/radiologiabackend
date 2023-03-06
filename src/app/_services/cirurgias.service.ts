@@ -45,6 +45,7 @@ export class CirurgiasService {
   }
 
   createMascara(doc, record) {
+    console.log(record)
     console.log(Object.assign({}, record));
     return this.afs.collection('mascaras').doc(doc).set(JSON.parse(JSON.stringify(Object.assign({}, record))));
   }

@@ -1,0 +1,29 @@
+<form [formGroup]="taskForm" (ngSubmit)="submitForm()">
+    <div formArrayName="taskList">
+      <div *ngFor="let task of taskForm.get('taskList').controls; let i = index;">
+        <div [formGroupName]="i">
+          <label>
+            Task name:
+            <input formControlName="taskName">
+          </label>
+  
+          <label>
+            Task description:
+            <textarea formControlName="taskDescription"></textarea>
+          </label>
+  
+          <label>
+            Due date:
+            <input type="date" formControlName="dueDate">
+          </label>
+  
+          <button type="button" (click)="removeTask(i)">Remove task</button>
+          <button type="button" (click)="addTask()">Add task</button>
+        
+          <button type="submit">Submit</button>
+        </div>
+      </div>
+    </div>
+  
+  </form>
+  

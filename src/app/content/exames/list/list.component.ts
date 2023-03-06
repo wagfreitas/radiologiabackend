@@ -101,7 +101,7 @@ export class ListComponent implements OnInit {
     this.dataSource1.sort = this.sort;
   }
 
-  ngOnInit() {
+   ngOnInit() {
     this.breadcrumb = {
       'mainlabel': 'Lista de Cirurgias ',
       'links': [

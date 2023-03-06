@@ -4,7 +4,6 @@ import { DOCUMENT } from '@angular/common';
 @Component({
   selector: 'app-public-layout',
   templateUrl: './public-layout.component.html',
-  styleUrls: ['./public-layout.component.css']
 })
 export class PublicLayoutComponent implements OnInit {
 

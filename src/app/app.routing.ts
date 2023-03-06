@@ -5,7 +5,7 @@ import { AuthGuard } from './_guards/auth.guard';
 import { RegisterComponent } from './register';
 import { LoginComponent } from './login';
 import { ChangelogComponent } from './changelog/changelog.component';
-import { FullLayoutComponent } from './_layout/full-layout/full-layout.component';
+
 
 const appRoutes: Routes = [
   // Public layout

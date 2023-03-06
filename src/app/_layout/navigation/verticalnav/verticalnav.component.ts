@@ -14,7 +14,6 @@ import { AppConstants } from 'src/app/_helpers/app.constants';
 
   selector: 'app-verticalnav',
   templateUrl: './verticalnav.component.html',
-  styleUrls: ['./verticalnav.component.css'],
   animations: [
     trigger('popOverState', [
       state('show', style({

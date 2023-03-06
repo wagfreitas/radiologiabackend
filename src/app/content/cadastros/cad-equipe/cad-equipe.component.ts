@@ -8,6 +8,7 @@ import { AlertService } from '../../../_services/alert.service';
 
 import { DatePipe } from '@angular/common';
 import { DadosService } from '../../../_services/dados.service';
+import { validateEventsArray } from '@angular/fire/firestore';
 
 
 
@@ -24,6 +25,7 @@ export class CadEquipeComponent implements OnInit {
   unidades: any = [];
   sexos: any = [];
   laudos: any = [];
+  formValid = false;
 
   @ViewChild('f', { read: true, static: false }) userProfileForm: NgForm;
 
@@ -205,6 +207,8 @@ export class CadEquipeComponent implements OnInit {
     {id: "N", label: "Sem Laudos"}
   ]
 
+
+
   }
 
   get f() {
@@ -219,7 +223,7 @@ export class CadEquipeComponent implements OnInit {
       niver: ['', Validators.required],
       sexo: ['', Validators.required],
       medico: ['', Validators.required],
-      tipoexame: ['', Validators.required],
+      tipoexame: ['',Validators.required],
       equipamento: ['', Validators.required],
       data: ['', Validators.required],
       hora: ['', Validators.required],
@@ -289,7 +293,7 @@ export class CadEquipeComponent implements OnInit {
     return this.cadEquipe.get('laudo');
   }
 
-  ResetForm() {
+  resetForm() {
     this.cadEquipe.reset();
   }
 
@@ -301,7 +305,7 @@ export class CadEquipeComponent implements OnInit {
   }
 
   oncadEquipeSubmit(dados: any) {
-
+    console.log(this.formValid)
     dados.status = 'Não Baixado';
     var niver = new Date(this.cadEquipe.value.niver);
     dados.horaConsulta = this.cadEquipe.value.hora +this.cadEquipe.value.min+'00'
@@ -320,12 +324,15 @@ export class CadEquipeComponent implements OnInit {
        console.log("formulario nao é valido", this.cadEquipe.value)
       return;
     } else {
+      
+      this.formValid = true
 
      // console.log("Idade da pessoa ", dados )
         this.dadoService.create(dados).then(() => {
           this.alertService.error('Dados Inseridos', true);
           //  window.location.reload();
           this.submitted = true;
+         this.resetForm()
        });
 
     }
@@ -337,6 +344,10 @@ export class CadEquipeComponent implements OnInit {
     setTimeout(() => {
       this.blockUIProjectInfo.stop();
     }, 2500);
+  }
+
+  cancela(){
+    this.cadEquipe.reset()
   }
 
   reloadUserProfile() {
