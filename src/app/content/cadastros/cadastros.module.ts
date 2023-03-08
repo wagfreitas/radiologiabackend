@@ -14,12 +14,12 @@ import {DatePipe} from '@angular/common';
 import { CadEquipeComponent } from './cad-equipe/cad-equipe.component';
 import { MaterialModule } from '../../app-material/material.module';
 import { MascarasComponent } from './mascaras/mascaras.component';
-import { Mascara2Component } from './mascara2/mascara2.component';
+
 
 
 
 @NgModule({
-  declarations: [CadEquipeComponent, MascarasComponent, Mascara2Component],
+  declarations: [CadEquipeComponent, MascarasComponent],
   imports: [
     CommonModule,
     CardModule,
@@ -40,11 +40,7 @@ import { Mascara2Component } from './mascara2/mascara2.component';
       {
         path: 'mascaras',
         component: MascarasComponent
-      },
-      {
-        path: 'mascaras2',
-        component: Mascara2Component
-      },
+      }
     ])
   ],
   providers: [DatePipe],

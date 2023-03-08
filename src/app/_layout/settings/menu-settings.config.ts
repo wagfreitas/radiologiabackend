@@ -101,12 +101,7 @@ export const MenuSettingsConfig: MenuConfig = {
             {
               title: 'Máscaras',
               page: '/cadastros/mascaras'
-            },
-
-            {
-              title: 'Máscaras2',
-              page: '/cadastros/mascaras2'
-            },
+            }
 
           ]
         }
