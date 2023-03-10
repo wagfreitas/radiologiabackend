@@ -17700,6 +17700,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _isObject_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./isObject.js */ "./node_modules/lodash-es/isObject.js");
 /* harmony import */ var _isSet_js__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./isSet.js */ "./node_modules/lodash-es/isSet.js");
 /* harmony import */ var _keys_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./keys.js */ "./node_modules/lodash-es/keys.js");
+/* harmony import */ var _keysIn_js__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./keysIn.js */ "./node_modules/lodash-es/keysIn.js");
+
 
 
 
@@ -17850,7 +17852,7 @@ function baseClone(value, bitmask, customizer, key, object, stack) {
 
   var keysFunc = isFull
     ? (isFlat ? _getAllKeysIn_js__WEBPACK_IMPORTED_MODULE_10__["default"] : _getAllKeys_js__WEBPACK_IMPORTED_MODULE_9__["default"])
-    : (isFlat ? keysIn : _keys_js__WEBPACK_IMPORTED_MODULE_20__["default"]);
+    : (isFlat ? _keysIn_js__WEBPACK_IMPORTED_MODULE_21__["default"] : _keys_js__WEBPACK_IMPORTED_MODULE_20__["default"]);
 
   var props = isArr ? undefined : keysFunc(value);
   Object(_arrayEach_js__WEBPACK_IMPORTED_MODULE_1__["default"])(props || value, function(subValue, key) {
@@ -20253,12 +20255,16 @@ function baseNth(array, n) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _arrayMap_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./_arrayMap.js */ "./node_modules/lodash-es/_arrayMap.js");
-/* harmony import */ var _baseIteratee_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./_baseIteratee.js */ "./node_modules/lodash-es/_baseIteratee.js");
-/* harmony import */ var _baseMap_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./_baseMap.js */ "./node_modules/lodash-es/_baseMap.js");
-/* harmony import */ var _baseSortBy_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./_baseSortBy.js */ "./node_modules/lodash-es/_baseSortBy.js");
-/* harmony import */ var _baseUnary_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./_baseUnary.js */ "./node_modules/lodash-es/_baseUnary.js");
-/* harmony import */ var _compareMultiple_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./_compareMultiple.js */ "./node_modules/lodash-es/_compareMultiple.js");
-/* harmony import */ var _identity_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./identity.js */ "./node_modules/lodash-es/identity.js");
+/* harmony import */ var _baseGet_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./_baseGet.js */ "./node_modules/lodash-es/_baseGet.js");
+/* harmony import */ var _baseIteratee_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./_baseIteratee.js */ "./node_modules/lodash-es/_baseIteratee.js");
+/* harmony import */ var _baseMap_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./_baseMap.js */ "./node_modules/lodash-es/_baseMap.js");
+/* harmony import */ var _baseSortBy_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./_baseSortBy.js */ "./node_modules/lodash-es/_baseSortBy.js");
+/* harmony import */ var _baseUnary_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./_baseUnary.js */ "./node_modules/lodash-es/_baseUnary.js");
+/* harmony import */ var _compareMultiple_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./_compareMultiple.js */ "./node_modules/lodash-es/_compareMultiple.js");
+/* harmony import */ var _identity_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./identity.js */ "./node_modules/lodash-es/identity.js");
+/* harmony import */ var _isArray_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./isArray.js */ "./node_modules/lodash-es/isArray.js");
+
+
 
 
 
@@ -20277,18 +20283,31 @@ __webpack_require__.r(__webpack_exports__);
  * @returns {Array} Returns the new sorted array.
  */
 function baseOrderBy(collection, iteratees, orders) {
-  var index = -1;
-  iteratees = Object(_arrayMap_js__WEBPACK_IMPORTED_MODULE_0__["default"])(iteratees.length ? iteratees : [_identity_js__WEBPACK_IMPORTED_MODULE_6__["default"]], Object(_baseUnary_js__WEBPACK_IMPORTED_MODULE_4__["default"])(_baseIteratee_js__WEBPACK_IMPORTED_MODULE_1__["default"]));
+  if (iteratees.length) {
+    iteratees = Object(_arrayMap_js__WEBPACK_IMPORTED_MODULE_0__["default"])(iteratees, function(iteratee) {
+      if (Object(_isArray_js__WEBPACK_IMPORTED_MODULE_8__["default"])(iteratee)) {
+        return function(value) {
+          return Object(_baseGet_js__WEBPACK_IMPORTED_MODULE_1__["default"])(value, iteratee.length === 1 ? iteratee[0] : iteratee);
+        }
+      }
+      return iteratee;
+    });
+  } else {
+    iteratees = [_identity_js__WEBPACK_IMPORTED_MODULE_7__["default"]];
+  }
 
-  var result = Object(_baseMap_js__WEBPACK_IMPORTED_MODULE_2__["default"])(collection, function(value, key, collection) {
+  var index = -1;
+  iteratees = Object(_arrayMap_js__WEBPACK_IMPORTED_MODULE_0__["default"])(iteratees, Object(_baseUnary_js__WEBPACK_IMPORTED_MODULE_5__["default"])(_baseIteratee_js__WEBPACK_IMPORTED_MODULE_2__["default"]));
+
+  var result = Object(_baseMap_js__WEBPACK_IMPORTED_MODULE_3__["default"])(collection, function(value, key, collection) {
     var criteria = Object(_arrayMap_js__WEBPACK_IMPORTED_MODULE_0__["default"])(iteratees, function(iteratee) {
       return iteratee(value);
     });
     return { 'criteria': criteria, 'index': ++index, 'value': value };
   });
 
-  return Object(_baseSortBy_js__WEBPACK_IMPORTED_MODULE_3__["default"])(result, function(object, other) {
-    return Object(_compareMultiple_js__WEBPACK_IMPORTED_MODULE_5__["default"])(object, other, orders);
+  return Object(_baseSortBy_js__WEBPACK_IMPORTED_MODULE_4__["default"])(result, function(object, other) {
+    return Object(_compareMultiple_js__WEBPACK_IMPORTED_MODULE_6__["default"])(object, other, orders);
   });
 }
 
@@ -20880,6 +20899,10 @@ function baseSet(object, path, value, customizer) {
     var key = Object(_toKey_js__WEBPACK_IMPORTED_MODULE_4__["default"])(path[index]),
         newValue = value;
 
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return object;
+    }
+
     if (index != lastIndex) {
       var objValue = nested[key];
       newValue = customizer ? customizer(objValue, key, nested) : undefined;
@@ -21206,11 +21229,14 @@ var nativeFloor = Math.floor,
  *  into `array`.
  */
 function baseSortedIndexBy(array, value, iteratee, retHighest) {
-  value = iteratee(value);
-
   var low = 0,
-      high = array == null ? 0 : array.length,
-      valIsNaN = value !== value,
+      high = array == null ? 0 : array.length;
+  if (high === 0) {
+    return 0;
+  }
+
+  value = iteratee(value);
+  var valIsNaN = value !== value,
       valIsNull = value === null,
       valIsSymbol = Object(_isSymbol_js__WEBPACK_IMPORTED_MODULE_0__["default"])(value),
       valIsUndefined = value === undefined;
@@ -21484,6 +21510,39 @@ function baseToString(value) {
 }
 
 /* harmony default export */ __webpack_exports__["default"] = (baseToString);
+
+
+/***/ }),
+
+/***/ "./node_modules/lodash-es/_baseTrim.js":
+/*!*********************************************!*\
+  !*** ./node_modules/lodash-es/_baseTrim.js ***!
+  \*********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _trimmedEndIndex_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./_trimmedEndIndex.js */ "./node_modules/lodash-es/_trimmedEndIndex.js");
+
+
+/** Used to match leading whitespace. */
+var reTrimStart = /^\s+/;
+
+/**
+ * The base implementation of `_.trim`.
+ *
+ * @private
+ * @param {string} string The string to trim.
+ * @returns {string} Returns the trimmed string.
+ */
+function baseTrim(string) {
+  return string
+    ? string.slice(0, Object(_trimmedEndIndex_js__WEBPACK_IMPORTED_MODULE_0__["default"])(string) + 1).replace(reTrimStart, '')
+    : string;
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (baseTrim);
 
 
 /***/ }),
@@ -24352,10 +24411,11 @@ function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
   if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
     return false;
   }
-  // Assume cyclic values are equal.
-  var stacked = stack.get(array);
-  if (stacked && stack.get(other)) {
-    return stacked == other;
+  // Check that cyclic values are equal.
+  var arrStacked = stack.get(array);
+  var othStacked = stack.get(other);
+  if (arrStacked && othStacked) {
+    return arrStacked == other && othStacked == array;
   }
   var index = -1,
       result = true,
@@ -24592,10 +24652,11 @@ function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
       return false;
     }
   }
-  // Assume cyclic values are equal.
-  var stacked = stack.get(object);
-  if (stacked && stack.get(other)) {
-    return stacked == other;
+  // Check that cyclic values are equal.
+  var objStacked = stack.get(object);
+  var othStacked = stack.get(other);
+  if (objStacked && othStacked) {
+    return objStacked == other && othStacked == object;
   }
   var result = true;
   stack.set(object, other);
@@ -28212,6 +28273,38 @@ function toSource(func) {
 }
 
 /* harmony default export */ __webpack_exports__["default"] = (toSource);
+
+
+/***/ }),
+
+/***/ "./node_modules/lodash-es/_trimmedEndIndex.js":
+/*!****************************************************!*\
+  !*** ./node_modules/lodash-es/_trimmedEndIndex.js ***!
+  \****************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/** Used to match a single whitespace character. */
+var reWhitespace = /\s/;
+
+/**
+ * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
+ * character of `string`.
+ *
+ * @private
+ * @param {string} string The string to inspect.
+ * @returns {number} Returns the index of the last non-whitespace character.
+ */
+function trimmedEndIndex(string) {
+  var index = string.length;
+
+  while (index-- && reWhitespace.test(string.charAt(index))) {}
+  return index;
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (trimmedEndIndex);
 
 
 /***/ }),
@@ -32589,6 +32682,10 @@ __webpack_require__.r(__webpack_exports__);
  * // The `_.property` iteratee shorthand.
  * _.filter(users, 'active');
  * // => objects for ['barney']
+ *
+ * // Combining several predicates using `_.overEvery` or `_.overSome`.
+ * _.filter(users, _.overSome([{ 'age': 36 }, ['age', 40]]));
+ * // => objects for ['fred', 'barney']
  */
 function filter(collection, predicate) {
   var func = Object(_isArray_js__WEBPACK_IMPORTED_MODULE_3__["default"])(collection) ? _arrayFilter_js__WEBPACK_IMPORTED_MODULE_0__["default"] : _baseFilter_js__WEBPACK_IMPORTED_MODULE_1__["default"];
@@ -37687,7 +37784,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /** Used as the semantic version number. */
-var VERSION = '4.17.15';
+var VERSION = '4.17.21';
 
 /** Used to compose bitmasks for function metadata. */
 var WRAP_BIND_KEY_FLAG = 2;
@@ -39967,6 +40064,9 @@ var CLONE_DEEP_FLAG = 1;
  * values against any array or object value, respectively. See `_.isEqual`
  * for a list of supported value comparisons.
  *
+ * **Note:** Multiple values can be checked by combining several matchers
+ * using `_.overSome`
+ *
  * @static
  * @memberOf _
  * @since 3.0.0
@@ -39982,6 +40082,10 @@ var CLONE_DEEP_FLAG = 1;
  *
  * _.filter(objects, _.matches({ 'a': 4, 'c': 6 }));
  * // => [{ 'a': 4, 'b': 5, 'c': 6 }]
+ *
+ * // Checking for several possible values
+ * _.filter(objects, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
+ * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
  */
 function matches(source) {
   return Object(_baseMatches_js__WEBPACK_IMPORTED_MODULE_1__["default"])(Object(_baseClone_js__WEBPACK_IMPORTED_MODULE_0__["default"])(source, CLONE_DEEP_FLAG));
@@ -40018,6 +40122,9 @@ var CLONE_DEEP_FLAG = 1;
  * `srcValue` values against any array or object value, respectively. See
  * `_.isEqual` for a list of supported value comparisons.
  *
+ * **Note:** Multiple values can be checked by combining several matchers
+ * using `_.overSome`
+ *
  * @static
  * @memberOf _
  * @since 3.2.0
@@ -40034,6 +40141,10 @@ var CLONE_DEEP_FLAG = 1;
  *
  * _.find(objects, _.matchesProperty('a', 4));
  * // => { 'a': 4, 'b': 5, 'c': 6 }
+ *
+ * // Checking for several possible values
+ * _.filter(objects, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
+ * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
  */
 function matchesProperty(path, srcValue) {
   return Object(_baseMatchesProperty_js__WEBPACK_IMPORTED_MODULE_1__["default"])(path, Object(_baseClone_js__WEBPACK_IMPORTED_MODULE_0__["default"])(srcValue, CLONE_DEEP_FLAG));
@@ -41866,6 +41977,10 @@ __webpack_require__.r(__webpack_exports__);
  * Creates a function that checks if **all** of the `predicates` return
  * truthy when invoked with the arguments it receives.
  *
+ * Following shorthands are possible for providing predicates.
+ * Pass an `Object` and it will be used as an parameter for `_.matches` to create the predicate.
+ * Pass an `Array` of parameters for `_.matchesProperty` and the predicate will be created using them.
+ *
  * @static
  * @memberOf _
  * @since 4.0.0
@@ -41911,6 +42026,10 @@ __webpack_require__.r(__webpack_exports__);
  * Creates a function that checks if **any** of the `predicates` return
  * truthy when invoked with the arguments it receives.
  *
+ * Following shorthands are possible for providing predicates.
+ * Pass an `Object` and it will be used as an parameter for `_.matches` to create the predicate.
+ * Pass an `Array` of parameters for `_.matchesProperty` and the predicate will be created using them.
+ *
  * @static
  * @memberOf _
  * @since 4.0.0
@@ -41930,6 +42049,9 @@ __webpack_require__.r(__webpack_exports__);
  *
  * func(NaN);
  * // => false
+ *
+ * var matchesFunc = _.overSome([{ 'a': 1 }, { 'a': 2 }])
+ * var matchesPropertyFunc = _.overSome([['a', 1], ['a', 2]])
  */
 var overSome = Object(_createOver_js__WEBPACK_IMPORTED_MODULE_1__["default"])(_arraySome_js__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
@@ -42130,7 +42252,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-/** Used to match leading and trailing whitespace. */
+/** Used to match leading whitespace. */
 var reTrimStart = /^\s+/;
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
@@ -44300,15 +44422,15 @@ __webpack_require__.r(__webpack_exports__);
  * var users = [
  *   { 'user': 'fred',   'age': 48 },
  *   { 'user': 'barney', 'age': 36 },
- *   { 'user': 'fred',   'age': 40 },
+ *   { 'user': 'fred',   'age': 30 },
  *   { 'user': 'barney', 'age': 34 }
  * ];
  *
  * _.sortBy(users, [function(o) { return o.user; }]);
- * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
+ * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 30]]
  *
  * _.sortBy(users, ['user', 'age']);
- * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
+ * // => objects for [['barney', 34], ['barney', 36], ['fred', 30], ['fred', 48]]
  */
 var sortBy = Object(_baseRest_js__WEBPACK_IMPORTED_MODULE_2__["default"])(function(collection, iteratees) {
   if (collection == null) {
@@ -45775,10 +45897,25 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/** Error message constants. */
+var INVALID_TEMPL_VAR_ERROR_TEXT = 'Invalid `variable` option passed into `_.template`';
+
 /** Used to match empty string literals in compiled template source. */
 var reEmptyStringLeading = /\b__p \+= '';/g,
     reEmptyStringMiddle = /\b(__p \+=) '' \+/g,
     reEmptyStringTrailing = /(__e\(.*?\)|\b__t\)) \+\n'';/g;
+
+/**
+ * Used to validate the `validate` option in `_.template` variable.
+ *
+ * Forbids characters which could potentially change the meaning of the function argument definition:
+ * - "()," (modification of function parameters)
+ * - "=" (default value)
+ * - "[]{}" (destructuring of function parameters)
+ * - "/" (beginning of a comment)
+ * - whitespace
+ */
+var reForbiddenIdentifierChars = /[()=,{}\[\]\/\s]/;
 
 /**
  * Used to match
@@ -45934,11 +46071,11 @@ function template(string, options, guard) {
 
   // Use a sourceURL for easier debugging.
   // The sourceURL gets injected into the source that's eval-ed, so be careful
-  // with lookup (in case of e.g. prototype pollution), and strip newlines if any.
-  // A newline wouldn't be a valid sourceURL anyway, and it'd enable code injection.
+  // to normalize all kinds of whitespace, so e.g. newlines (and unicode versions of it) can't sneak in
+  // and escape the comment, thus injecting code that gets evaled.
   var sourceURL = hasOwnProperty.call(options, 'sourceURL')
     ? ('//# sourceURL=' +
-       (options.sourceURL + '').replace(/[\r\n]/g, ' ') +
+       (options.sourceURL + '').replace(/\s/g, ' ') +
        '\n')
     : '';
 
@@ -45971,12 +46108,16 @@ function template(string, options, guard) {
 
   // If `variable` is not specified wrap a with-statement around the generated
   // code to add the data object to the top of the scope chain.
-  // Like with sourceURL, we take care to not check the option's prototype,
-  // as this configuration is a code injection vector.
   var variable = hasOwnProperty.call(options, 'variable') && options.variable;
   if (!variable) {
     source = 'with (obj) {\n' + source + '\n}\n';
   }
+  // Throw an error if a forbidden character was found in `variable`, to prevent
+  // potential command injection attacks.
+  else if (reForbiddenIdentifierChars.test(variable)) {
+    throw new Error(INVALID_TEMPL_VAR_ERROR_TEXT);
+  }
+
   // Cleanup code by stripping empty strings.
   source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
     .replace(reEmptyStringMiddle, '$1')
@@ -46640,16 +46781,15 @@ function toLower(value) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _isObject_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./isObject.js */ "./node_modules/lodash-es/isObject.js");
-/* harmony import */ var _isSymbol_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./isSymbol.js */ "./node_modules/lodash-es/isSymbol.js");
+/* harmony import */ var _baseTrim_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./_baseTrim.js */ "./node_modules/lodash-es/_baseTrim.js");
+/* harmony import */ var _isObject_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./isObject.js */ "./node_modules/lodash-es/isObject.js");
+/* harmony import */ var _isSymbol_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./isSymbol.js */ "./node_modules/lodash-es/isSymbol.js");
+
 
 
 
 /** Used as references for various `Number` constants. */
 var NAN = 0 / 0;
-
-/** Used to match leading and trailing whitespace. */
-var reTrim = /^\s+|\s+$/g;
 
 /** Used to detect bad signed hexadecimal string values. */
 var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
@@ -46690,17 +46830,17 @@ function toNumber(value) {
   if (typeof value == 'number') {
     return value;
   }
-  if (Object(_isSymbol_js__WEBPACK_IMPORTED_MODULE_1__["default"])(value)) {
+  if (Object(_isSymbol_js__WEBPACK_IMPORTED_MODULE_2__["default"])(value)) {
     return NAN;
   }
-  if (Object(_isObject_js__WEBPACK_IMPORTED_MODULE_0__["default"])(value)) {
+  if (Object(_isObject_js__WEBPACK_IMPORTED_MODULE_1__["default"])(value)) {
     var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-    value = Object(_isObject_js__WEBPACK_IMPORTED_MODULE_0__["default"])(other) ? (other + '') : other;
+    value = Object(_isObject_js__WEBPACK_IMPORTED_MODULE_1__["default"])(other) ? (other + '') : other;
   }
   if (typeof value != 'string') {
     return value === 0 ? value : +value;
   }
-  value = value.replace(reTrim, '');
+  value = Object(_baseTrim_js__WEBPACK_IMPORTED_MODULE_0__["default"])(value);
   var isBinary = reIsBinary.test(value);
   return (isBinary || reIsOctal.test(value))
     ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
@@ -47136,11 +47276,12 @@ function transform(object, iteratee, accumulator) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _baseToString_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./_baseToString.js */ "./node_modules/lodash-es/_baseToString.js");
-/* harmony import */ var _castSlice_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./_castSlice.js */ "./node_modules/lodash-es/_castSlice.js");
-/* harmony import */ var _charsEndIndex_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./_charsEndIndex.js */ "./node_modules/lodash-es/_charsEndIndex.js");
-/* harmony import */ var _charsStartIndex_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./_charsStartIndex.js */ "./node_modules/lodash-es/_charsStartIndex.js");
-/* harmony import */ var _stringToArray_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./_stringToArray.js */ "./node_modules/lodash-es/_stringToArray.js");
-/* harmony import */ var _toString_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./toString.js */ "./node_modules/lodash-es/toString.js");
+/* harmony import */ var _baseTrim_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./_baseTrim.js */ "./node_modules/lodash-es/_baseTrim.js");
+/* harmony import */ var _castSlice_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./_castSlice.js */ "./node_modules/lodash-es/_castSlice.js");
+/* harmony import */ var _charsEndIndex_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./_charsEndIndex.js */ "./node_modules/lodash-es/_charsEndIndex.js");
+/* harmony import */ var _charsStartIndex_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./_charsStartIndex.js */ "./node_modules/lodash-es/_charsStartIndex.js");
+/* harmony import */ var _stringToArray_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./_stringToArray.js */ "./node_modules/lodash-es/_stringToArray.js");
+/* harmony import */ var _toString_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./toString.js */ "./node_modules/lodash-es/toString.js");
 
 
 
@@ -47148,8 +47289,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-/** Used to match leading and trailing whitespace. */
-var reTrim = /^\s+|\s+$/g;
 
 /**
  * Removes leading and trailing whitespace or specified characters from `string`.
@@ -47174,19 +47313,19 @@ var reTrim = /^\s+|\s+$/g;
  * // => ['foo', 'bar']
  */
 function trim(string, chars, guard) {
-  string = Object(_toString_js__WEBPACK_IMPORTED_MODULE_5__["default"])(string);
+  string = Object(_toString_js__WEBPACK_IMPORTED_MODULE_6__["default"])(string);
   if (string && (guard || chars === undefined)) {
-    return string.replace(reTrim, '');
+    return Object(_baseTrim_js__WEBPACK_IMPORTED_MODULE_1__["default"])(string);
   }
   if (!string || !(chars = Object(_baseToString_js__WEBPACK_IMPORTED_MODULE_0__["default"])(chars))) {
     return string;
   }
-  var strSymbols = Object(_stringToArray_js__WEBPACK_IMPORTED_MODULE_4__["default"])(string),
-      chrSymbols = Object(_stringToArray_js__WEBPACK_IMPORTED_MODULE_4__["default"])(chars),
-      start = Object(_charsStartIndex_js__WEBPACK_IMPORTED_MODULE_3__["default"])(strSymbols, chrSymbols),
-      end = Object(_charsEndIndex_js__WEBPACK_IMPORTED_MODULE_2__["default"])(strSymbols, chrSymbols) + 1;
+  var strSymbols = Object(_stringToArray_js__WEBPACK_IMPORTED_MODULE_5__["default"])(string),
+      chrSymbols = Object(_stringToArray_js__WEBPACK_IMPORTED_MODULE_5__["default"])(chars),
+      start = Object(_charsStartIndex_js__WEBPACK_IMPORTED_MODULE_4__["default"])(strSymbols, chrSymbols),
+      end = Object(_charsEndIndex_js__WEBPACK_IMPORTED_MODULE_3__["default"])(strSymbols, chrSymbols) + 1;
 
-  return Object(_castSlice_js__WEBPACK_IMPORTED_MODULE_1__["default"])(strSymbols, start, end).join('');
+  return Object(_castSlice_js__WEBPACK_IMPORTED_MODULE_2__["default"])(strSymbols, start, end).join('');
 }
 
 /* harmony default export */ __webpack_exports__["default"] = (trim);
@@ -47208,14 +47347,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _charsEndIndex_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./_charsEndIndex.js */ "./node_modules/lodash-es/_charsEndIndex.js");
 /* harmony import */ var _stringToArray_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./_stringToArray.js */ "./node_modules/lodash-es/_stringToArray.js");
 /* harmony import */ var _toString_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./toString.js */ "./node_modules/lodash-es/toString.js");
+/* harmony import */ var _trimmedEndIndex_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./_trimmedEndIndex.js */ "./node_modules/lodash-es/_trimmedEndIndex.js");
 
 
 
 
 
 
-/** Used to match leading and trailing whitespace. */
-var reTrimEnd = /\s+$/;
 
 /**
  * Removes trailing whitespace or specified characters from `string`.
@@ -47239,7 +47377,7 @@ var reTrimEnd = /\s+$/;
 function trimEnd(string, chars, guard) {
   string = Object(_toString_js__WEBPACK_IMPORTED_MODULE_4__["default"])(string);
   if (string && (guard || chars === undefined)) {
-    return string.replace(reTrimEnd, '');
+    return string.slice(0, Object(_trimmedEndIndex_js__WEBPACK_IMPORTED_MODULE_5__["default"])(string) + 1);
   }
   if (!string || !(chars = Object(_baseToString_js__WEBPACK_IMPORTED_MODULE_0__["default"])(chars))) {
     return string;
@@ -47275,7 +47413,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-/** Used to match leading and trailing whitespace. */
+/** Used to match leading whitespace. */
 var reTrimStart = /^\s+/;
 
 /**
@@ -66528,10 +66666,10 @@ webpackContext.id = "./node_modules/moment/locale sync recursive ^\\.\\/.*$";
 
 /***/ }),
 
-/***/ "./node_modules/ng2-charts/fesm5/ng2-charts.js":
-/*!*****************************************************!*\
-  !*** ./node_modules/ng2-charts/fesm5/ng2-charts.js ***!
-  \*****************************************************/
+/***/ "./node_modules/ng2-charts/fesm2015/ng2-charts.js":
+/*!********************************************************!*\
+  !*** ./node_modules/ng2-charts/fesm2015/ng2-charts.js ***!
+  \********************************************************/
 /*! exports provided: BaseChartDirective, ChartsModule, ThemeService, defaultColors, monkeyPatchChartJsLegend, monkeyPatchChartJsTooltip */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -66544,12 +66682,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "monkeyPatchChartJsLegend", function() { return monkeyPatchChartJsLegend; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "monkeyPatchChartJsTooltip", function() { return monkeyPatchChartJsTooltip; });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
-/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
-/* harmony import */ var chart_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! chart.js */ "./node_modules/chart.js/dist/Chart.js");
-/* harmony import */ var chart_js__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(chart_js__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
-/* harmony import */ var lodash_es__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lodash-es */ "./node_modules/lodash-es/lodash.js");
-
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
+/* harmony import */ var lodash_es__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lodash-es */ "./node_modules/lodash-es/lodash.js");
+/* harmony import */ var chart_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! chart.js */ "./node_modules/chart.js/dist/Chart.js");
+/* harmony import */ var chart_js__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(chart_js__WEBPACK_IMPORTED_MODULE_3__);
 
 
 
@@ -66557,10 +66693,11 @@ __webpack_require__.r(__webpack_exports__);
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/default-colors.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /** @type {?} */
-var defaultColors = [
+const defaultColors = [
     [255, 99, 132],
     [54, 162, 235],
     [255, 206, 86],
@@ -66577,7 +66714,8 @@ var defaultColors = [
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/get-colors.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 /**
  * Generate colors by chart type
@@ -66605,7 +66743,7 @@ function getColors(chartType, index, count) {
     if (chartType === 'scatter') {
         return formatPieColors(generateColors(count));
     }
-    throw new Error("getColors - Unsupported chart type " + chartType);
+    throw new Error('getColors - Unsupported chart type: ' + chartType);
 }
 /**
  * @param {?} colour
@@ -66659,30 +66797,30 @@ function formatPieColors(colors) {
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 0.6); })),
+        (color) => rgba(color, 0.6))),
         borderColor: colors.map((/**
          * @return {?}
          */
-        function () { return '#fff'; })),
+        () => '#fff')),
         pointBackgroundColor: colors.map((/**
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 1); })),
+        (color) => rgba(color, 1))),
         pointBorderColor: colors.map((/**
          * @return {?}
          */
-        function () { return '#fff'; })),
+        () => '#fff')),
         pointHoverBackgroundColor: colors.map((/**
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 1); })),
+        (color) => rgba(color, 1))),
         pointHoverBorderColor: colors.map((/**
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 1); }))
+        (color) => rgba(color, 1)))
     };
 }
 /**
@@ -66695,22 +66833,22 @@ function formatPolarAreaColors(colors) {
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 0.6); })),
+        (color) => rgba(color, 0.6))),
         borderColor: colors.map((/**
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 1); })),
+        (color) => rgba(color, 1))),
         hoverBackgroundColor: colors.map((/**
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 0.8); })),
+        (color) => rgba(color, 0.8))),
         hoverBorderColor: colors.map((/**
          * @param {?} color
          * @return {?}
          */
-        function (color) { return rgba(color, 1); }))
+        (color) => rgba(color, 1)))
     };
 }
 /**
@@ -66734,8 +66872,8 @@ function generateColor(index) {
  */
 function generateColors(count) {
     /** @type {?} */
-    var colorsArr = new Array(count);
-    for (var i = 0; i < count; i++) {
+    const colorsArr = new Array(count);
+    for (let i = 0; i < count; i++) {
         colorsArr[i] = defaultColors[i] || getRandomColor();
     }
     return colorsArr;
@@ -66743,51 +66881,51 @@ function generateColors(count) {
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/theme.service.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
-var ThemeService = /** @class */ (function () {
-    function ThemeService() {
+class ThemeService {
+    constructor() {
         this.pColorschemesOptions = {};
-        this.colorschemesOptions = new rxjs__WEBPACK_IMPORTED_MODULE_3__["BehaviorSubject"]({});
+        this.colorschemesOptions = new rxjs__WEBPACK_IMPORTED_MODULE_1__["BehaviorSubject"]({});
     }
     /**
      * @param {?} options
      * @return {?}
      */
-    ThemeService.prototype.setColorschemesOptions = /**
-     * @param {?} options
-     * @return {?}
-     */
-    function (options) {
+    setColorschemesOptions(options) {
         this.pColorschemesOptions = options;
         this.colorschemesOptions.next(options);
-    };
+    }
     /**
      * @return {?}
      */
-    ThemeService.prototype.getColorschemesOptions = /**
-     * @return {?}
-     */
-    function () {
+    getColorschemesOptions() {
         return this.pColorschemesOptions;
-    };
-    ThemeService.decorators = [
-        { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Injectable"], args: [{
-                    providedIn: 'root'
-                },] }
-    ];
-    /** @nocollapse */
-    ThemeService.ctorParameters = function () { return []; };
-    /** @nocollapse */ ThemeService.ngInjectableDef = Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjectable"])({ factory: function ThemeService_Factory() { return new ThemeService(); }, token: ThemeService, providedIn: "root" });
-    return ThemeService;
-}());
+    }
+}
+ThemeService.decorators = [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Injectable"], args: [{
+                providedIn: 'root'
+            },] }
+];
+/** @nocollapse */
+ThemeService.ctorParameters = () => [];
+/** @nocollapse */ ThemeService.ɵprov = Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjectable"])({ factory: function ThemeService_Factory() { return new ThemeService(); }, token: ThemeService, providedIn: "root" });
+if (false) {}
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/base-chart.directive.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
+/**
+ * @record
+ */
+function OldState() { }
+if (false) {}
 /** @enum {number} */
-var UpdateType = {
+const UpdateType = {
     Default: 0,
     Update: 1,
     Refresh: 2,
@@ -66795,8 +66933,12 @@ var UpdateType = {
 UpdateType[UpdateType.Default] = 'Default';
 UpdateType[UpdateType.Update] = 'Update';
 UpdateType[UpdateType.Refresh] = 'Refresh';
-var BaseChartDirective = /** @class */ (function () {
-    function BaseChartDirective(element, themeService) {
+class BaseChartDirective {
+    /**
+     * @param {?} element
+     * @param {?} themeService
+     */
+    constructor(element, themeService) {
         this.element = element;
         this.themeService = themeService;
         this.options = {};
@@ -66820,79 +66962,54 @@ var BaseChartDirective = /** @class */ (function () {
     }
     /**
      * Register a plugin.
-     */
-    /**
-     * Register a plugin.
      * @param {?} plugin
      * @return {?}
      */
-    BaseChartDirective.registerPlugin = /**
-     * Register a plugin.
-     * @param {?} plugin
-     * @return {?}
-     */
-    function (plugin) {
-        chart_js__WEBPACK_IMPORTED_MODULE_2__["Chart"].plugins.register(plugin);
-    };
+    static registerPlugin(plugin) {
+        chart_js__WEBPACK_IMPORTED_MODULE_3__["pluginService"].register(plugin);
+    }
     /**
      * @param {?} plugin
      * @return {?}
      */
-    BaseChartDirective.unregisterPlugin = /**
-     * @param {?} plugin
-     * @return {?}
-     */
-    function (plugin) {
-        chart_js__WEBPACK_IMPORTED_MODULE_2__["Chart"].plugins.unregister(plugin);
-    };
+    static unregisterPlugin(plugin) {
+        chart_js__WEBPACK_IMPORTED_MODULE_3__["pluginService"].unregister(plugin);
+    }
     /**
      * @return {?}
      */
-    BaseChartDirective.prototype.ngOnInit = /**
-     * @return {?}
-     */
-    function () {
-        var _this = this;
+    ngOnInit() {
         this.ctx = this.element.nativeElement.getContext('2d');
         this.refresh();
         this.subs.push(this.themeService.colorschemesOptions.subscribe((/**
          * @param {?} r
          * @return {?}
          */
-        function (r) { return _this.themeChanged(r); })));
-    };
+        r => this.themeChanged(r))));
+    }
     /**
      * @private
      * @param {?} options
      * @return {?}
      */
-    BaseChartDirective.prototype.themeChanged = /**
-     * @private
-     * @param {?} options
-     * @return {?}
-     */
-    function (options) {
+    themeChanged(options) {
         this.refresh();
-    };
+    }
     /**
      * @return {?}
      */
-    BaseChartDirective.prototype.ngDoCheck = /**
-     * @return {?}
-     */
-    function () {
-        var _this = this;
+    ngDoCheck() {
         if (!this.chart) {
             return;
         }
         /** @type {?} */
-        var updateRequired = UpdateType.Default;
+        let updateRequired = UpdateType.Default;
         /** @type {?} */
-        var wantUpdate = (/**
+        const wantUpdate = (/**
          * @param {?} x
          * @return {?}
          */
-        function (x) {
+        (x) => {
             updateRequired = x > updateRequired ? x : updateRequired;
         });
         if (!!this.data !== this.old.dataExists) {
@@ -66917,12 +67034,12 @@ var BaseChartDirective = /** @class */ (function () {
          * @param {?} i
          * @return {?}
          */
-        function (x, i) { return x.data !== _this.old.datasetsDataObjects[i]; })).length) {
+        (x, i) => x.data !== this.old.datasetsDataObjects[i])).length) {
             this.old.datasetsDataObjects = this.datasets.map((/**
              * @param {?} x
              * @return {?}
              */
-            function (x) { return x.data; }));
+            x => x.data));
             wantUpdate(UpdateType.Update);
         }
         if (this.datasets && this.datasets.filter((/**
@@ -66930,12 +67047,12 @@ var BaseChartDirective = /** @class */ (function () {
          * @param {?} i
          * @return {?}
          */
-        function (x, i) { return x.data.length !== _this.old.datasetsDataLengths[i]; })).length) {
+        (x, i) => x.data.length !== this.old.datasetsDataLengths[i])).length) {
             this.old.datasetsDataLengths = this.datasets.map((/**
              * @param {?} x
              * @return {?}
              */
-            function (x) { return x.data.length; }));
+            x => x.data.length));
             wantUpdate(UpdateType.Update);
         }
         if (!!this.colors !== this.old.colorsExists) {
@@ -66949,12 +67066,12 @@ var BaseChartDirective = /** @class */ (function () {
          * @param {?} i
          * @return {?}
          */
-        function (x, i) { return !_this.colorsEqual(x, _this.old.colors[i]); })).length) {
+        (x, i) => !this.colorsEqual(x, this.old.colors[i]))).length) {
             this.old.colors = this.colors.map((/**
              * @param {?} x
              * @return {?}
              */
-            function (x) { return _this.copyColor(x); }));
+            x => this.copyColor(x)));
             this.updateColors();
             wantUpdate(UpdateType.Update);
         }
@@ -66967,12 +67084,12 @@ var BaseChartDirective = /** @class */ (function () {
          * @param {?} i
          * @return {?}
          */
-        function (x, i) { return !_this.labelsEqual(x, _this.old.labels[i]); })).length) {
+        (x, i) => !this.labelsEqual(x, this.old.labels[i]))).length) {
             this.old.labels = this.labels.map((/**
              * @param {?} x
              * @return {?}
              */
-            function (x) { return _this.copyLabel(x); }));
+            x => this.copyLabel(x)));
             wantUpdate(UpdateType.Update);
         }
         if (!!this.options.legend !== this.old.legendExists) {
@@ -66993,32 +67110,23 @@ var BaseChartDirective = /** @class */ (function () {
                 this.refresh();
                 break;
         }
-    };
+    }
     /**
      * @param {?} a
      * @return {?}
      */
-    BaseChartDirective.prototype.copyLabel = /**
-     * @param {?} a
-     * @return {?}
-     */
-    function (a) {
+    copyLabel(a) {
         if (Array.isArray(a)) {
-            return Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__spread"])(a);
+            return [...a];
         }
         return a;
-    };
+    }
     /**
      * @param {?} a
      * @param {?} b
      * @return {?}
      */
-    BaseChartDirective.prototype.labelsEqual = /**
-     * @param {?} a
-     * @param {?} b
-     * @return {?}
-     */
-    function (a, b) {
+    labelsEqual(a, b) {
         return Array.isArray(a) === Array.isArray(b)
             && (Array.isArray(a) || a === b)
             && (!Array.isArray(a) || a.length === b.length)
@@ -67027,19 +67135,14 @@ var BaseChartDirective = /** @class */ (function () {
              * @param {?} i
              * @return {?}
              */
-            function (x, i) { return x !== b[i]; })).length === 0);
-    };
+            (x, i) => x !== b[i])).length === 0);
+    }
     /**
      * @param {?} a
      * @return {?}
      */
-    BaseChartDirective.prototype.copyColor = /**
-     * @param {?} a
-     * @return {?}
-     */
-    function (a) {
-        /** @type {?} */
-        var rc = {
+    copyColor(a) {
+        return {
             backgroundColor: a.backgroundColor,
             borderWidth: a.borderWidth,
             borderColor: a.borderColor,
@@ -67061,82 +67164,69 @@ var BaseChartDirective = /** @class */ (function () {
             hoverBorderColor: a.hoverBorderColor,
             hoverBorderWidth: a.hoverBorderWidth,
         };
-        return rc;
-    };
+    }
     /**
      * @param {?} a
      * @param {?} b
      * @return {?}
      */
-    BaseChartDirective.prototype.colorsEqual = /**
-     * @param {?} a
-     * @param {?} b
-     * @return {?}
-     */
-    function (a, b) {
+    colorsEqual(a, b) {
         if (!a !== !b) {
             return false;
         }
-        return !a || a.backgroundColor === b.backgroundColor
-            && (a.borderWidth === b.borderWidth)
-            && (a.borderColor === b.borderColor)
-            && (a.borderCapStyle === b.borderCapStyle)
-            && (a.borderDash === b.borderDash)
-            && (a.borderDashOffset === b.borderDashOffset)
-            && (a.borderJoinStyle === b.borderJoinStyle)
-            && (a.pointBorderColor === b.pointBorderColor)
-            && (a.pointBackgroundColor === b.pointBackgroundColor)
-            && (a.pointBorderWidth === b.pointBorderWidth)
-            && (a.pointRadius === b.pointRadius)
-            && (a.pointHoverRadius === b.pointHoverRadius)
-            && (a.pointHitRadius === b.pointHitRadius)
-            && (a.pointHoverBackgroundColor === b.pointHoverBackgroundColor)
-            && (a.pointHoverBorderColor === b.pointHoverBorderColor)
-            && (a.pointHoverBorderWidth === b.pointHoverBorderWidth)
-            && (a.pointStyle === b.pointStyle)
-            && (a.hoverBackgroundColor === b.hoverBackgroundColor)
-            && (a.hoverBorderColor === b.hoverBorderColor)
-            && (a.hoverBorderWidth === b.hoverBorderWidth);
-    };
+        return !a ||
+            (a.backgroundColor === b.backgroundColor)
+                && (a.borderWidth === b.borderWidth)
+                && (a.borderColor === b.borderColor)
+                && (a.borderCapStyle === b.borderCapStyle)
+                && (a.borderDash === b.borderDash)
+                && (a.borderDashOffset === b.borderDashOffset)
+                && (a.borderJoinStyle === b.borderJoinStyle)
+                && (a.pointBorderColor === b.pointBorderColor)
+                && (a.pointBackgroundColor === b.pointBackgroundColor)
+                && (a.pointBorderWidth === b.pointBorderWidth)
+                && (a.pointRadius === b.pointRadius)
+                && (a.pointHoverRadius === b.pointHoverRadius)
+                && (a.pointHitRadius === b.pointHitRadius)
+                && (a.pointHoverBackgroundColor === b.pointHoverBackgroundColor)
+                && (a.pointHoverBorderColor === b.pointHoverBorderColor)
+                && (a.pointHoverBorderWidth === b.pointHoverBorderWidth)
+                && (a.pointStyle === b.pointStyle)
+                && (a.hoverBackgroundColor === b.hoverBackgroundColor)
+                && (a.hoverBorderColor === b.hoverBorderColor)
+                && (a.hoverBorderWidth === b.hoverBorderWidth);
+    }
     /**
      * @return {?}
      */
-    BaseChartDirective.prototype.updateColors = /**
-     * @return {?}
-     */
-    function () {
-        var _this = this;
+    updateColors() {
         this.datasets.forEach((/**
          * @param {?} elm
          * @param {?} index
          * @return {?}
          */
-        function (elm, index) {
-            if (_this.colors && _this.colors[index]) {
-                Object.assign(elm, _this.colors[index]);
+        (elm, index) => {
+            if (this.colors && this.colors[index]) {
+                Object.assign(elm, this.colors[index]);
             }
             else {
-                Object.assign(elm, getColors(_this.chartType, index, elm.data.length), Object(tslib__WEBPACK_IMPORTED_MODULE_1__["__assign"])({}, elm));
+                Object.assign(elm, getColors(this.chartType, index, elm.data.length), Object.assign({}, elm));
             }
         }));
-    };
+    }
     /**
      * @param {?} changes
      * @return {?}
      */
-    BaseChartDirective.prototype.ngOnChanges = /**
-     * @param {?} changes
-     * @return {?}
-     */
-    function (changes) {
+    ngOnChanges(changes) {
         /** @type {?} */
-        var updateRequired = UpdateType.Default;
+        let updateRequired = UpdateType.Default;
         /** @type {?} */
-        var wantUpdate = (/**
+        const wantUpdate = (/**
          * @param {?} x
          * @return {?}
          */
-        function (x) {
+        (x) => {
             updateRequired = x > updateRequired ? x : updateRequired;
         });
         // Check if the changes are in the data or datasets or labels or legend
@@ -67173,14 +67263,11 @@ var BaseChartDirective = /** @class */ (function () {
                 this.refresh();
                 break;
         }
-    };
+    }
     /**
      * @return {?}
      */
-    BaseChartDirective.prototype.ngOnDestroy = /**
-     * @return {?}
-     */
-    function () {
+    ngOnDestroy() {
         if (this.chart) {
             this.chart.destroy();
             this.chart = void 0;
@@ -67189,69 +67276,47 @@ var BaseChartDirective = /** @class */ (function () {
          * @param {?} x
          * @return {?}
          */
-        function (x) { return x.unsubscribe(); }));
-    };
+        x => x.unsubscribe()));
+    }
     /**
      * @param {?=} duration
-     * @param {?=} lazy
      * @return {?}
      */
-    BaseChartDirective.prototype.update = /**
-     * @param {?=} duration
-     * @param {?=} lazy
-     * @return {?}
-     */
-    function (duration, lazy) {
+    update(duration) {
         if (this.chart) {
-            return this.chart.update(duration, lazy);
+            return this.chart.update(duration);
         }
-    };
+    }
     /**
      * @param {?} index
      * @param {?} hidden
      * @return {?}
      */
-    BaseChartDirective.prototype.hideDataset = /**
-     * @param {?} index
-     * @param {?} hidden
-     * @return {?}
-     */
-    function (index, hidden) {
+    hideDataset(index, hidden) {
         this.chart.getDatasetMeta(index).hidden = hidden;
         this.chart.update();
-    };
+    }
     /**
      * @param {?} index
      * @return {?}
      */
-    BaseChartDirective.prototype.isDatasetHidden = /**
-     * @param {?} index
-     * @return {?}
-     */
-    function (index) {
+    isDatasetHidden(index) {
         return this.chart.getDatasetMeta(index).hidden;
-    };
+    }
     /**
      * @return {?}
      */
-    BaseChartDirective.prototype.toBase64Image = /**
-     * @return {?}
-     */
-    function () {
+    toBase64Image() {
         return this.chart.toBase64Image();
-    };
+    }
     /**
      * @return {?}
      */
-    BaseChartDirective.prototype.getChartConfiguration = /**
-     * @return {?}
-     */
-    function () {
-        var _this = this;
+    getChartConfiguration() {
         /** @type {?} */
-        var datasets = this.getDatasets();
+        const datasets = this.getDatasets();
         /** @type {?} */
-        var options = Object.assign({}, this.options);
+        const options = Object.assign({}, this.options);
         if (this.legend === false) {
             options.legend = { display: false };
         }
@@ -67263,11 +67328,11 @@ var BaseChartDirective = /** @class */ (function () {
              * @param {?} active
              * @return {?}
              */
-            function (event, active) {
+            (event, active) => {
                 if (active && !active.length) {
                     return;
                 }
-                _this.chartHover.emit({ event: event, active: active });
+                this.chartHover.emit({ event, active });
             });
         }
         if (!options.onClick) {
@@ -67276,72 +67341,58 @@ var BaseChartDirective = /** @class */ (function () {
              * @param {?=} active
              * @return {?}
              */
-            function (event, active) {
-                _this.chartClick.emit({ event: event, active: active });
+            (event, active) => {
+                this.chartClick.emit({ event, active });
             });
         }
         /** @type {?} */
-        var mergedOptions = this.smartMerge(options, this.themeService.getColorschemesOptions());
-        /** @type {?} */
-        var chartConfig = {
+        const mergedOptions = this.smartMerge(options, this.themeService.getColorschemesOptions());
+        return {
             type: this.chartType,
             data: {
                 labels: this.labels || [],
-                datasets: datasets
+                datasets
             },
             plugins: this.plugins,
             options: mergedOptions,
         };
-        return chartConfig;
-    };
+    }
     /**
      * @param {?} ctx
      * @return {?}
      */
-    BaseChartDirective.prototype.getChartBuilder = /**
-     * @param {?} ctx
-     * @return {?}
-     */
-    function (ctx /*, data:any[], options:any*/) {
+    getChartBuilder(ctx /*, data:any[], options:any*/) {
         /** @type {?} */
-        var chartConfig = this.getChartConfiguration();
-        return new chart_js__WEBPACK_IMPORTED_MODULE_2__["Chart"](ctx, chartConfig);
-    };
+        const chartConfig = this.getChartConfiguration();
+        return new chart_js__WEBPACK_IMPORTED_MODULE_3__["Chart"](ctx, chartConfig);
+    }
     /**
      * @param {?} options
      * @param {?} overrides
      * @param {?=} level
      * @return {?}
      */
-    BaseChartDirective.prototype.smartMerge = /**
-     * @param {?} options
-     * @param {?} overrides
-     * @param {?=} level
-     * @return {?}
-     */
-    function (options, overrides, level) {
-        var _this = this;
-        if (level === void 0) { level = 0; }
+    smartMerge(options, overrides, level = 0) {
         if (level === 0) {
-            options = Object(lodash_es__WEBPACK_IMPORTED_MODULE_4__["cloneDeep"])(options);
+            options = Object(lodash_es__WEBPACK_IMPORTED_MODULE_2__["cloneDeep"])(options);
         }
         /** @type {?} */
-        var keysToUpdate = Object.keys(overrides);
+        const keysToUpdate = Object.keys(overrides);
         keysToUpdate.forEach((/**
          * @param {?} key
          * @return {?}
          */
-        function (key) {
+        key => {
             if (Array.isArray(overrides[key])) {
                 /** @type {?} */
-                var arrayElements = options[key];
+                const arrayElements = options[key];
                 if (arrayElements) {
                     arrayElements.forEach((/**
                      * @param {?} r
                      * @return {?}
                      */
-                    function (r) {
-                        _this.smartMerge(r, overrides[key][0], level + 1);
+                    r => {
+                        this.smartMerge(r, overrides[key][0], level + 1);
                     }));
                 }
             }
@@ -67349,7 +67400,7 @@ var BaseChartDirective = /** @class */ (function () {
                 if (!(key in options)) {
                     options[key] = {};
                 }
-                _this.smartMerge(options[key], overrides[key], level + 1);
+                this.smartMerge(options[key], overrides[key], level + 1);
             }
             else {
                 options[key] = overrides[key];
@@ -67358,31 +67409,21 @@ var BaseChartDirective = /** @class */ (function () {
         if (level === 0) {
             return options;
         }
-    };
+    }
     /**
      * @private
      * @param {?} label
      * @return {?}
      */
-    BaseChartDirective.prototype.isMultiLineLabel = /**
-     * @private
-     * @param {?} label
-     * @return {?}
-     */
-    function (label) {
+    isMultiLineLabel(label) {
         return Array.isArray(label);
-    };
+    }
     /**
      * @private
      * @param {?} label
      * @return {?}
      */
-    BaseChartDirective.prototype.joinLabel = /**
-     * @private
-     * @param {?} label
-     * @return {?}
-     */
-    function (label) {
+    joinLabel(label) {
         if (!label) {
             return null;
         }
@@ -67392,40 +67433,29 @@ var BaseChartDirective = /** @class */ (function () {
         else {
             return label;
         }
-    };
+    }
     /**
      * @private
      * @param {?} datasets
      * @return {?}
      */
-    BaseChartDirective.prototype.propagateDatasetsToData = /**
-     * @private
-     * @param {?} datasets
-     * @return {?}
-     */
-    function (datasets) {
+    propagateDatasetsToData(datasets) {
         this.data = this.datasets.map((/**
          * @param {?} r
          * @return {?}
          */
-        function (r) { return r.data; }));
+        r => r.data));
         if (this.chart) {
             this.chart.data.datasets = datasets;
         }
         this.updateColors();
-    };
+    }
     /**
      * @private
      * @param {?} newDataValues
      * @return {?}
      */
-    BaseChartDirective.prototype.propagateDataToDatasets = /**
-     * @private
-     * @param {?} newDataValues
-     * @return {?}
-     */
-    function (newDataValues) {
-        var _this = this;
+    propagateDataToDatasets(newDataValues) {
         if (this.isMultiDataSet(newDataValues)) {
             if (this.datasets && newDataValues.length === this.datasets.length) {
                 this.datasets.forEach((/**
@@ -67433,7 +67463,7 @@ var BaseChartDirective = /** @class */ (function () {
                  * @param {?} i
                  * @return {?}
                  */
-                function (dataset, i) {
+                (dataset, i) => {
                     dataset.data = newDataValues[i];
                 }));
             }
@@ -67443,8 +67473,8 @@ var BaseChartDirective = /** @class */ (function () {
                  * @param {?} index
                  * @return {?}
                  */
-                function (data, index) {
-                    return { data: data, label: _this.joinLabel(_this.labels[index]) || "Label " + index };
+                (data, index) => {
+                    return { data, label: this.joinLabel(this.labels[index]) || `Label ${index}` };
                 }));
                 if (this.chart) {
                     this.chart.data.datasets = this.datasets;
@@ -67459,36 +67489,30 @@ var BaseChartDirective = /** @class */ (function () {
                 }
             }
             else {
+                if (!this.datasets[0]) {
+                    this.datasets[0] = {};
+                }
                 this.datasets[0].data = newDataValues;
                 this.datasets.splice(1); // Remove all elements but the first
             }
         }
         this.updateColors();
-    };
+    }
     /**
      * @private
      * @param {?} data
      * @return {?}
      */
-    BaseChartDirective.prototype.isMultiDataSet = /**
-     * @private
-     * @param {?} data
-     * @return {?}
-     */
-    function (data) {
+    isMultiDataSet(data) {
         return Array.isArray(data[0]);
-    };
+    }
     /**
      * @private
      * @return {?}
      */
-    BaseChartDirective.prototype.getDatasets = /**
-     * @private
-     * @return {?}
-     */
-    function () {
+    getDatasets() {
         if (!this.datasets && !this.data) {
-            throw new Error("ng-charts configuration error, data or datasets field are required to render chart " + this.chartType);
+            throw new Error(`ng-charts configuration error, data or datasets field are required to render chart ${this.chartType}`);
         }
         // If `datasets` is defined, use it over the `data` property.
         if (this.datasets) {
@@ -67499,16 +67523,12 @@ var BaseChartDirective = /** @class */ (function () {
             this.propagateDataToDatasets(this.data);
             return this.datasets;
         }
-    };
+    }
     /**
      * @private
      * @return {?}
      */
-    BaseChartDirective.prototype.refresh = /**
-     * @private
-     * @return {?}
-     */
-    function () {
+    refresh() {
         // if (this.options && this.options.responsive) {
         //   setTimeout(() => this.refresh(), 50);
         // }
@@ -67520,68 +67540,79 @@ var BaseChartDirective = /** @class */ (function () {
         if (this.ctx) {
             this.chart = this.getChartBuilder(this.ctx /*, data, this.options*/);
         }
-    };
-    BaseChartDirective.decorators = [
-        { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Directive"], args: [{
-                    // tslint:disable-next-line:directive-selector
-                    selector: 'canvas[baseChart]',
-                    exportAs: 'base-chart'
-                },] }
-    ];
-    /** @nocollapse */
-    BaseChartDirective.ctorParameters = function () { return [
-        { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ElementRef"] },
-        { type: ThemeService }
-    ]; };
-    BaseChartDirective.propDecorators = {
-        data: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        datasets: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        labels: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        options: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        chartType: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        colors: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        legend: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        plugins: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
-        chartClick: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"] }],
-        chartHover: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"] }]
-    };
-    return BaseChartDirective;
-}());
-
-/**
- * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
- */
-var ChartsModule = /** @class */ (function () {
-    function ChartsModule() {
     }
-    ChartsModule.decorators = [
-        { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"], args: [{
-                    declarations: [
-                        BaseChartDirective
-                    ],
-                    imports: [],
-                    exports: [
-                        BaseChartDirective
-                    ]
-                },] }
-    ];
-    return ChartsModule;
-}());
+}
+BaseChartDirective.decorators = [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Directive"], args: [{
+                // tslint:disable-next-line:directive-selector
+                selector: 'canvas[baseChart]',
+                exportAs: 'base-chart'
+            },] }
+];
+/** @nocollapse */
+BaseChartDirective.ctorParameters = () => [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["ElementRef"] },
+    { type: ThemeService }
+];
+BaseChartDirective.propDecorators = {
+    data: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    datasets: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    labels: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    options: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    chartType: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    colors: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    legend: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    plugins: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"] }],
+    chartClick: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"] }],
+    chartHover: [{ type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"] }]
+};
+if (false) {}
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/charts.module.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
+class ChartsModule {
+}
+ChartsModule.decorators = [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"], args: [{
+                declarations: [
+                    BaseChartDirective
+                ],
+                imports: [],
+                exports: [
+                    BaseChartDirective
+                ]
+            },] }
+];
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/color.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
+/**
+ * @record
+ */
+function Color() { }
+if (false) {}
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/colors.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ */
+/**
+ * @record
+ */
+function Colors() { }
+if (false) {}
+
+/**
+ * @fileoverview added by tsickle
+ * Generated from: lib/monkey-patch-chart-js-legend.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 // tslint:disable:variable-name
 // tslint:disable:no-var-keyword
@@ -67599,21 +67630,21 @@ function monkeyPatchChartJsLegend() {
         return;
     }
     /** @type {?} */
-    var plugins = Chart.plugins.getAll();
+    const plugins = Chart.plugins.getAll();
     /** @type {?} */
-    var legend = plugins.filter((/**
+    const legend = plugins.filter((/**
      * @param {?} p
      * @return {?}
      */
-    function (p) { return p.id === 'legend'; }))[0];
+    p => p.id === 'legend'))[0];
     legend._element.prototype.fit = fit;
     legend._element.prototype.draw = draw;
     /** @type {?} */
-    var helpers = Chart.helpers;
+    const helpers = Chart.helpers;
     /** @type {?} */
-    var defaults = Chart.defaults;
+    const defaults = Chart.defaults;
     /** @type {?} */
-    var valueOrDefault = helpers.valueOrDefault;
+    const valueOrDefault = helpers.valueOrDefault;
     /**
      * @param {?} labelOpts
      * @param {?} fontSize
@@ -68079,7 +68110,8 @@ function monkeyPatchChartJsLegend() {
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: lib/monkey-patch-chart-js-tooltip.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 // tslint:disable:variable-name
 // tslint:disable:no-var-keyword
@@ -68098,7 +68130,7 @@ function monkeyPatchChartJsTooltip() {
     }
     Chart.Tooltip.prototype.drawBody = drawBody;
     /** @type {?} */
-    var helpers = Chart.helpers;
+    const helpers = Chart.helpers;
     /**
      * @param {?} vm
      * @param {?} align
@@ -68193,12 +68225,14 @@ function monkeyPatchChartJsTooltip() {
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: public_api.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 
 /**
  * @fileoverview added by tsickle
- * @suppress {checkTypes,extraRequire,missingOverride,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
+ * Generated from: ng2-charts.ts
+ * @suppress {checkTypes,constantProperty,extraRequire,missingOverride,missingRequire,missingReturn,unusedPrivateMembers,uselessCode} checked by tsc
  */
 
 
@@ -68264,7 +68298,7 @@ module.exports = function(originalModule) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = (".nav-tabs-title {\n    font-size: 20px;\n    color: white;\n}\n\n::ng-deep .mat-tooltip {\n    /* your own custom styles here */\n    /* e.g. */\n    background-color: rgb(236, 232, 235);\n    font-size: 12px;\n    font-weight: bold;\n    color: rgb(255, 255, 255);\n}\n\n.red-color {\n    color: rgb(255, 255, 255);\n}\n\n.table-condensed {\n    font-size: 15px;\n}\n\n.input-group {\n    color: white;\n}\n\n.glyphicon {\n    color: white;\n}\n\n.search-hero {\n    max-width: 800px;\n    padding-bottom: 10px;\n    margin: auto;\n}\n\n.form-control {\n    box-shadow: 0 5px 20px 0 rgb(202, 150, 193);\n    color: white;\n    width: 200px;\n    ;\n}\n\n.form-control::-moz-placeholder {\n    font-family: FontAwesome;\n}\n\n.form-control::placeholder {\n    font-family: FontAwesome;\n}\n\n\n\n\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInNyYy9hcHAvY29udGVudC9kYXNoYm9hcmQvZGFzaGJvYXJkLmNvbXBvbmVudC5jc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7SUFDSSxlQUFlO0lBQ2YsWUFBWTtBQUNoQjs7QUFFQTtJQUNJLGdDQUFnQztJQUNoQyxTQUFTO0lBQ1Qsb0NBQW9DO0lBQ3BDLGVBQWU7SUFDZixpQkFBaUI7SUFDakIseUJBQXlCO0FBQzdCOztBQUVBO0lBQ0kseUJBQXlCO0FBQzdCOztBQUVBO0lBQ0ksZUFBZTtBQUNuQjs7QUFFQTtJQUNJLFlBQVk7QUFDaEI7O0FBRUE7SUFDSSxZQUFZO0FBQ2hCOztBQUVBO0lBQ0ksZ0JBQWdCO0lBQ2hCLG9CQUFvQjtJQUNwQixZQUFZO0FBQ2hCOztBQUVBO0lBQ0ksMkNBQTJDO0lBQzNDLFlBQVk7SUFDWixZQUFZOztBQUVoQjs7QUFFQTtJQUNJLHdCQUF3QjtBQUM1Qjs7QUFGQTtJQUNJLHdCQUF3QjtBQUM1QiIsImZpbGUiOiJzcmMvYXBwL2NvbnRlbnQvZGFzaGJvYXJkL2Rhc2hib2FyZC5jb21wb25lbnQuY3NzIiwic291cmNlc0NvbnRlbnQiOlsiLm5hdi10YWJzLXRpdGxlIHtcbiAgICBmb250LXNpemU6IDIwcHg7XG4gICAgY29sb3I6IHdoaXRlO1xufVxuXG46Om5nLWRlZXAgLm1hdC10b29sdGlwIHtcbiAgICAvKiB5b3VyIG93biBjdXN0b20gc3R5bGVzIGhlcmUgKi9cbiAgICAvKiBlLmcuICovXG4gICAgYmFja2dyb3VuZC1jb2xvcjogcmdiKDIzNiwgMjMyLCAyMzUpO1xuICAgIGZvbnQtc2l6ZTogMTJweDtcbiAgICBmb250LXdlaWdodDogYm9sZDtcbiAgICBjb2xvcjogcmdiKDI1NSwgMjU1LCAyNTUpO1xufVxuXG4ucmVkLWNvbG9yIHtcbiAgICBjb2xvcjogcmdiKDI1NSwgMjU1LCAyNTUpO1xufVxuXG4udGFibGUtY29uZGVuc2VkIHtcbiAgICBmb250LXNpemU6IDE1cHg7XG59XG5cbi5pbnB1dC1ncm91cCB7XG4gICAgY29sb3I6IHdoaXRlO1xufVxuXG4uZ2x5cGhpY29uIHtcbiAgICBjb2xvcjogd2hpdGU7XG59XG5cbi5zZWFyY2gtaGVybyB7XG4gICAgbWF4LXdpZHRoOiA4MDBweDtcbiAgICBwYWRkaW5nLWJvdHRvbTogMTBweDtcbiAgICBtYXJnaW46IGF1dG87XG59XG5cbi5mb3JtLWNvbnRyb2wge1xuICAgIGJveC1zaGFkb3c6IDAgNXB4IDIwcHggMCByZ2IoMjAyLCAxNTAsIDE5Myk7XG4gICAgY29sb3I6IHdoaXRlO1xuICAgIHdpZHRoOiAyMDBweDtcbiAgICA7XG59XG5cbi5mb3JtLWNvbnRyb2w6OnBsYWNlaG9sZGVyIHtcbiAgICBmb250LWZhbWlseTogRm9udEF3ZXNvbWU7XG59XG5cblxuXG4iXX0= */");
+/* harmony default export */ __webpack_exports__["default"] = (".nav-tabs-title {\n    font-size: 20px;\n    color: white;\n}\n\n::ng-deep .mat-tooltip {\n    /* your own custom styles here */\n    /* e.g. */\n    background-color: rgb(236, 232, 235);\n    font-size: 12px;\n    font-weight: bold;\n    color: rgb(255, 255, 255);\n}\n\n.red-color {\n    color: rgb(255, 255, 255);\n}\n\n.table-condensed {\n    font-size: 15px;\n}\n\n.input-group {\n    color: white;\n}\n\n.glyphicon {\n    color: white;\n}\n\n.search-hero {\n    max-width: 800px;\n    padding-bottom: 10px;\n    margin: auto;\n}\n\n.form-control {\n    box-shadow: 0 5px 20px 0 rgb(202, 150, 193);\n    color: white;\n    width: 200px;\n    ;\n}\n\n.form-control::-webkit-input-placeholder {\n    font-family: FontAwesome;\n}\n\n.form-control::-moz-placeholder {\n    font-family: FontAwesome;\n}\n\n.form-control::-ms-input-placeholder {\n    font-family: FontAwesome;\n}\n\n.form-control::placeholder {\n    font-family: FontAwesome;\n}\n\n\n\n\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInNyYy9hcHAvY29udGVudC9kYXNoYm9hcmQvZGFzaGJvYXJkLmNvbXBvbmVudC5jc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7SUFDSSxlQUFlO0lBQ2YsWUFBWTtBQUNoQjs7QUFFQTtJQUNJLGdDQUFnQztJQUNoQyxTQUFTO0lBQ1Qsb0NBQW9DO0lBQ3BDLGVBQWU7SUFDZixpQkFBaUI7SUFDakIseUJBQXlCO0FBQzdCOztBQUVBO0lBQ0kseUJBQXlCO0FBQzdCOztBQUVBO0lBQ0ksZUFBZTtBQUNuQjs7QUFFQTtJQUNJLFlBQVk7QUFDaEI7O0FBRUE7SUFDSSxZQUFZO0FBQ2hCOztBQUVBO0lBQ0ksZ0JBQWdCO0lBQ2hCLG9CQUFvQjtJQUNwQixZQUFZO0FBQ2hCOztBQUVBO0lBQ0ksMkNBQTJDO0lBQzNDLFlBQVk7SUFDWixZQUFZOztBQUVoQjs7QUFFQTtJQUNJLHdCQUF3QjtBQUM1Qjs7QUFGQTtJQUNJLHdCQUF3QjtBQUM1Qjs7QUFGQTtJQUNJLHdCQUF3QjtBQUM1Qjs7QUFGQTtJQUNJLHdCQUF3QjtBQUM1QiIsImZpbGUiOiJzcmMvYXBwL2NvbnRlbnQvZGFzaGJvYXJkL2Rhc2hib2FyZC5jb21wb25lbnQuY3NzIiwic291cmNlc0NvbnRlbnQiOlsiLm5hdi10YWJzLXRpdGxlIHtcbiAgICBmb250LXNpemU6IDIwcHg7XG4gICAgY29sb3I6IHdoaXRlO1xufVxuXG46Om5nLWRlZXAgLm1hdC10b29sdGlwIHtcbiAgICAvKiB5b3VyIG93biBjdXN0b20gc3R5bGVzIGhlcmUgKi9cbiAgICAvKiBlLmcuICovXG4gICAgYmFja2dyb3VuZC1jb2xvcjogcmdiKDIzNiwgMjMyLCAyMzUpO1xuICAgIGZvbnQtc2l6ZTogMTJweDtcbiAgICBmb250LXdlaWdodDogYm9sZDtcbiAgICBjb2xvcjogcmdiKDI1NSwgMjU1LCAyNTUpO1xufVxuXG4ucmVkLWNvbG9yIHtcbiAgICBjb2xvcjogcmdiKDI1NSwgMjU1LCAyNTUpO1xufVxuXG4udGFibGUtY29uZGVuc2VkIHtcbiAgICBmb250LXNpemU6IDE1cHg7XG59XG5cbi5pbnB1dC1ncm91cCB7XG4gICAgY29sb3I6IHdoaXRlO1xufVxuXG4uZ2x5cGhpY29uIHtcbiAgICBjb2xvcjogd2hpdGU7XG59XG5cbi5zZWFyY2gtaGVybyB7XG4gICAgbWF4LXdpZHRoOiA4MDBweDtcbiAgICBwYWRkaW5nLWJvdHRvbTogMTBweDtcbiAgICBtYXJnaW46IGF1dG87XG59XG5cbi5mb3JtLWNvbnRyb2wge1xuICAgIGJveC1zaGFkb3c6IDAgNXB4IDIwcHggMCByZ2IoMjAyLCAxNTAsIDE5Myk7XG4gICAgY29sb3I6IHdoaXRlO1xuICAgIHdpZHRoOiAyMDBweDtcbiAgICA7XG59XG5cbi5mb3JtLWNvbnRyb2w6OnBsYWNlaG9sZGVyIHtcbiAgICBmb250LWZhbWlseTogRm9udEF3ZXNvbWU7XG59XG5cblxuXG4iXX0= */");
 
 /***/ }),
 
@@ -68365,7 +68399,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
 /* harmony import */ var src_app_layout_breadcrumb_breadcrumb_module__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! src/app/_layout/breadcrumb/breadcrumb.module */ "./src/app/_layout/breadcrumb/breadcrumb.module.ts");
 /* harmony import */ var _dashboard_component__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./dashboard.component */ "./src/app/content/dashboard/dashboard.component.ts");
-/* harmony import */ var ng2_charts__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ng2-charts */ "./node_modules/ng2-charts/fesm5/ng2-charts.js");
+/* harmony import */ var ng2_charts__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ng2-charts */ "./node_modules/ng2-charts/fesm2015/ng2-charts.js");
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;

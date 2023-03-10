@@ -1963,7 +1963,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _settings_theme_settings_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../settings/theme-settings.service */ "./src/app/_layout/settings/theme-settings.service.ts");
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
 /* harmony import */ var _helpers_app_constants__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../_helpers/app.constants */ "./src/app/_helpers/app.constants.ts");
-/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm5/ngx-device-detector.js");
+/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm2015/ngx-device-detector.js");
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -2151,7 +2151,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var src_app_helpers_app_constants__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! src/app/_helpers/app.constants */ "./src/app/_helpers/app.constants.ts");
 /* harmony import */ var src_app_services_auth_service__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! src/app/_services/auth.service */ "./src/app/_services/auth.service.ts");
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
-/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm5/ngx-device-detector.js");
+/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm2015/ngx-device-detector.js");
 /* harmony import */ var ngx_perfect_scrollbar__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ngx-perfect-scrollbar */ "./node_modules/ngx-perfect-scrollbar/dist/ngx-perfect-scrollbar.es5.js");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -2985,7 +2985,7 @@ var VerticalComponent = /** @class */ (function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = (".is-sticky {\n  width: 100%;\n  position: fixed;\n  top: 0px;\n  z-index: 999;\n}\n\n.container {\n  padding-left: 0px !important;\n  padding-right: 0px !important;\n}\n\n.is-static {\n  width: 100%;\n  position: sticky;\n  top: 0px;\n  z-index: 999;\n}\n\n:host ::ng-deep .navbar-dark .navbar-nav .nav-link {\n  color: white !important;\n}\n\n:host ::ng-deep .navbar-light .navbar-nav .nav-link {\n  color: #6b6f82 !important;\n}\n\n.dropdown-menu .dropdown-submenu>a:after {\n  top: 14px;\n}\n\n.dropdown .dropdown-menu {\n  min-width: 13rem !important;\n}\n\n.navbar-horizontal .dropdown-menu .dropdown-submenu>a:after,\n.navbar-horizontal .dropdown-menu .dropdown-submenu>button:after {\n  right: 0.5rem;\n}\n\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInNyYy9hcHAvX2xheW91dC9uYXZpZ2F0aW9uL2hvcml6b250YWxuYXYvaG9yaXpvbnRhbG5hdi5jb21wb25lbnQuY3NzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBO0VBQ0UsV0FBVztFQUNYLGVBQWU7RUFDZixRQUFRO0VBQ1IsWUFBWTtBQUNkOztBQUVBO0VBQ0UsNEJBQTRCO0VBQzVCLDZCQUE2QjtBQUMvQjs7QUFFQTtFQUNFLFdBQVc7RUFDWCxnQkFBZ0I7RUFDaEIsUUFBUTtFQUNSLFlBQVk7QUFDZDs7QUFFQTtFQUNFLHVCQUF1QjtBQUN6Qjs7QUFFQTtFQUNFLHlCQUF5QjtBQUMzQjs7QUFFQTtFQUNFLFNBQVM7QUFDWDs7QUFFQTtFQUNFLDJCQUEyQjtBQUM3Qjs7QUFFQTs7RUFFRSxhQUFhO0FBQ2YiLCJmaWxlIjoic3JjL2FwcC9fbGF5b3V0L25hdmlnYXRpb24vaG9yaXpvbnRhbG5hdi9ob3Jpem9udGFsbmF2LmNvbXBvbmVudC5jc3MiLCJzb3VyY2VzQ29udGVudCI6WyIuaXMtc3RpY2t5IHtcbiAgd2lkdGg6IDEwMCU7XG4gIHBvc2l0aW9uOiBmaXhlZDtcbiAgdG9wOiAwcHg7XG4gIHotaW5kZXg6IDk5OTtcbn1cblxuLmNvbnRhaW5lciB7XG4gIHBhZGRpbmctbGVmdDogMHB4ICFpbXBvcnRhbnQ7XG4gIHBhZGRpbmctcmlnaHQ6IDBweCAhaW1wb3J0YW50O1xufVxuXG4uaXMtc3RhdGljIHtcbiAgd2lkdGg6IDEwMCU7XG4gIHBvc2l0aW9uOiBzdGlja3k7XG4gIHRvcDogMHB4O1xuICB6LWluZGV4OiA5OTk7XG59XG5cbjpob3N0IDo6bmctZGVlcCAubmF2YmFyLWRhcmsgLm5hdmJhci1uYXYgLm5hdi1saW5rIHtcbiAgY29sb3I6IHdoaXRlICFpbXBvcnRhbnQ7XG59XG5cbjpob3N0IDo6bmctZGVlcCAubmF2YmFyLWxpZ2h0IC5uYXZiYXItbmF2IC5uYXYtbGluayB7XG4gIGNvbG9yOiAjNmI2ZjgyICFpbXBvcnRhbnQ7XG59XG5cbi5kcm9wZG93bi1tZW51IC5kcm9wZG93bi1zdWJtZW51PmE6YWZ0ZXIge1xuICB0b3A6IDE0cHg7XG59XG5cbi5kcm9wZG93biAuZHJvcGRvd24tbWVudSB7XG4gIG1pbi13aWR0aDogMTNyZW0gIWltcG9ydGFudDtcbn1cblxuLm5hdmJhci1ob3Jpem9udGFsIC5kcm9wZG93bi1tZW51IC5kcm9wZG93bi1zdWJtZW51PmE6YWZ0ZXIsXG4ubmF2YmFyLWhvcml6b250YWwgLmRyb3Bkb3duLW1lbnUgLmRyb3Bkb3duLXN1Ym1lbnU+YnV0dG9uOmFmdGVyIHtcbiAgcmlnaHQ6IDAuNXJlbTtcbn1cbiJdfQ== */");
+/* harmony default export */ __webpack_exports__["default"] = (".is-sticky {\n  width: 100%;\n  position: fixed;\n  top: 0px;\n  z-index: 999;\n}\n\n.container {\n  padding-left: 0px !important;\n  padding-right: 0px !important;\n}\n\n.is-static {\n  width: 100%;\n  position: -webkit-sticky;\n  position: sticky;\n  top: 0px;\n  z-index: 999;\n}\n\n:host ::ng-deep .navbar-dark .navbar-nav .nav-link {\n  color: white !important;\n}\n\n:host ::ng-deep .navbar-light .navbar-nav .nav-link {\n  color: #6b6f82 !important;\n}\n\n.dropdown-menu .dropdown-submenu>a:after {\n  top: 14px;\n}\n\n.dropdown .dropdown-menu {\n  min-width: 13rem !important;\n}\n\n.navbar-horizontal .dropdown-menu .dropdown-submenu>a:after,\n.navbar-horizontal .dropdown-menu .dropdown-submenu>button:after {\n  right: 0.5rem;\n}\n\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInNyYy9hcHAvX2xheW91dC9uYXZpZ2F0aW9uL2hvcml6b250YWxuYXYvaG9yaXpvbnRhbG5hdi5jb21wb25lbnQuY3NzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBO0VBQ0UsV0FBVztFQUNYLGVBQWU7RUFDZixRQUFRO0VBQ1IsWUFBWTtBQUNkOztBQUVBO0VBQ0UsNEJBQTRCO0VBQzVCLDZCQUE2QjtBQUMvQjs7QUFFQTtFQUNFLFdBQVc7RUFDWCx3QkFBZ0I7RUFBaEIsZ0JBQWdCO0VBQ2hCLFFBQVE7RUFDUixZQUFZO0FBQ2Q7O0FBRUE7RUFDRSx1QkFBdUI7QUFDekI7O0FBRUE7RUFDRSx5QkFBeUI7QUFDM0I7O0FBRUE7RUFDRSxTQUFTO0FBQ1g7O0FBRUE7RUFDRSwyQkFBMkI7QUFDN0I7O0FBRUE7O0VBRUUsYUFBYTtBQUNmIiwiZmlsZSI6InNyYy9hcHAvX2xheW91dC9uYXZpZ2F0aW9uL2hvcml6b250YWxuYXYvaG9yaXpvbnRhbG5hdi5jb21wb25lbnQuY3NzIiwic291cmNlc0NvbnRlbnQiOlsiLmlzLXN0aWNreSB7XG4gIHdpZHRoOiAxMDAlO1xuICBwb3NpdGlvbjogZml4ZWQ7XG4gIHRvcDogMHB4O1xuICB6LWluZGV4OiA5OTk7XG59XG5cbi5jb250YWluZXIge1xuICBwYWRkaW5nLWxlZnQ6IDBweCAhaW1wb3J0YW50O1xuICBwYWRkaW5nLXJpZ2h0OiAwcHggIWltcG9ydGFudDtcbn1cblxuLmlzLXN0YXRpYyB7XG4gIHdpZHRoOiAxMDAlO1xuICBwb3NpdGlvbjogc3RpY2t5O1xuICB0b3A6IDBweDtcbiAgei1pbmRleDogOTk5O1xufVxuXG46aG9zdCA6Om5nLWRlZXAgLm5hdmJhci1kYXJrIC5uYXZiYXItbmF2IC5uYXYtbGluayB7XG4gIGNvbG9yOiB3aGl0ZSAhaW1wb3J0YW50O1xufVxuXG46aG9zdCA6Om5nLWRlZXAgLm5hdmJhci1saWdodCAubmF2YmFyLW5hdiAubmF2LWxpbmsge1xuICBjb2xvcjogIzZiNmY4MiAhaW1wb3J0YW50O1xufVxuXG4uZHJvcGRvd24tbWVudSAuZHJvcGRvd24tc3VibWVudT5hOmFmdGVyIHtcbiAgdG9wOiAxNHB4O1xufVxuXG4uZHJvcGRvd24gLmRyb3Bkb3duLW1lbnUge1xuICBtaW4td2lkdGg6IDEzcmVtICFpbXBvcnRhbnQ7XG59XG5cbi5uYXZiYXItaG9yaXpvbnRhbCAuZHJvcGRvd24tbWVudSAuZHJvcGRvd24tc3VibWVudT5hOmFmdGVyLFxuLm5hdmJhci1ob3Jpem9udGFsIC5kcm9wZG93bi1tZW51IC5kcm9wZG93bi1zdWJtZW51PmJ1dHRvbjphZnRlciB7XG4gIHJpZ2h0OiAwLjVyZW07XG59XG4iXX0= */");
 
 /***/ }),
 
@@ -3313,7 +3313,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm5/operators/index.js");
 /* harmony import */ var _settings_theme_settings_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../settings/theme-settings.service */ "./src/app/_layout/settings/theme-settings.service.ts");
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
-/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm5/ngx-device-detector.js");
+/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm2015/ngx-device-detector.js");
 /* harmony import */ var src_app_helpers_app_constants__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! src/app/_helpers/app.constants */ "./src/app/_helpers/app.constants.ts");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -3814,7 +3814,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _settings_theme_settings_service__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../settings/theme-settings.service */ "./src/app/_layout/settings/theme-settings.service.ts");
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm5/operators/index.js");
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
-/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm5/ngx-device-detector.js");
+/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm2015/ngx-device-detector.js");
 /* harmony import */ var _helpers_app_constants__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../_helpers/app.constants */ "./src/app/_helpers/app.constants.ts");
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
@@ -4334,7 +4334,7 @@ var MenuSettingsConfig = {
                         {
                             title: 'Máscaras',
                             page: '/cadastros/mascaras'
-                        },
+                        }
                     ]
                 }
             },
@@ -5335,7 +5335,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var ngx_spinner__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ngx-spinner */ "./node_modules/ngx-spinner/fesm5/ngx-spinner.js");
 /* harmony import */ var _ngx_loading_bar_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @ngx-loading-bar/core */ "./node_modules/@ngx-loading-bar/core/fesm5/ngx-loading-bar-core.js");
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
-/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm5/ngx-device-detector.js");
+/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm2015/ngx-device-detector.js");
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
 /* harmony import */ var _helpers_app_constants__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./_helpers/app.constants */ "./src/app/_helpers/app.constants.ts");
 /* harmony import */ var _layout_settings_menu_settings_service__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./_layout/settings/menu-settings.service */ "./src/app/_layout/settings/menu-settings.service.ts");
@@ -5543,7 +5543,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var ngx_perfect_scrollbar__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ngx-perfect-scrollbar */ "./node_modules/ngx-perfect-scrollbar/dist/ngx-perfect-scrollbar.es5.js");
 /* harmony import */ var ngx_spinner__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ngx-spinner */ "./node_modules/ngx-spinner/fesm5/ngx-spinner.js");
 /* harmony import */ var _ngx_loading_bar_router__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! @ngx-loading-bar/router */ "./node_modules/@ngx-loading-bar/router/fesm5/ngx-loading-bar-router.js");
-/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm5/ngx-device-detector.js");
+/* harmony import */ var ngx_device_detector__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ngx-device-detector */ "./node_modules/ngx-device-detector/fesm2015/ngx-device-detector.js");
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
 /* harmony import */ var _layout_customizer_customizer_component__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./_layout/customizer/customizer.component */ "./src/app/_layout/customizer/customizer.component.ts");
 /* harmony import */ var _content_partials_partials_module__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./content/partials/partials.module */ "./src/app/content/partials/partials.module.ts");
@@ -6701,7 +6701,7 @@ Object(_angular_platform_browser_dynamic__WEBPACK_IMPORTED_MODULE_2__["platformB
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(/*! /Users/wagneralves/Desktop/Projetos/RadiologiaBackend/radiologiabackend/src/main.ts */"./src/main.ts");
+module.exports = __webpack_require__(/*! /Users/wagneralves/Desktop/Projetos/radiologiaback2/src/main.ts */"./src/main.ts");
 
 
 /***/ })

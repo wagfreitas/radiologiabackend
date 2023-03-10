@@ -1082,11 +1082,13 @@ var DefaultFormatter = (function () {
 }());
 var NouisliderComponent = (function () {
     /**
+     * @param {?} ngZone
      * @param {?} el
      * @param {?} renderer
      */
-    function NouisliderComponent(el, renderer) {
+    function NouisliderComponent(ngZone, el, renderer) {
         var _this = this;
+        this.ngZone = ngZone;
         this.el = el;
         this.renderer = renderer;
         this.config = {};
@@ -1097,7 +1099,7 @@ var NouisliderComponent = (function () {
         this.start = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"](true);
         this.end = new _angular_core__WEBPACK_IMPORTED_MODULE_1__["EventEmitter"](true);
         this.onChange = Function.prototype;
-        this.onTouched = Function.prototype;
+        this.cleanups = [];
         this.eventHandler = function (emitter, values, handle, unencoded) {
             var /** @type {?} */ v = _this.toValues(values);
             var /** @type {?} */ emitEvents = false;
@@ -1112,8 +1114,12 @@ var NouisliderComponent = (function () {
                 emitEvents = true;
             }
             if (emitEvents) {
-                emitter.emit(v);
-                _this.onChange(v);
+                _this.ngZone.run(function () {
+                    if (emitter.observers.length > 0) {
+                        emitter.emit(v);
+                    }
+                    _this.onChange(v);
+                });
             }
             if (Array.isArray(v)) {
                 _this.value[handle] = v[handle];
@@ -1177,11 +1183,13 @@ var NouisliderComponent = (function () {
             range: this.range || this.config.range || { min: this.min, max: this.max },
             tooltips: this.tooltips,
             snap: this.snap,
-            animate: this.animate
+            animate: this.animate,
         }));
         inputsConfig.tooltips = this.tooltips || this.config.tooltips;
         inputsConfig.format = this.format || this.config.format || new DefaultFormatter();
-        this.slider = Object(nouislider__WEBPACK_IMPORTED_MODULE_0__["create"])(this.el.nativeElement.querySelector('div'), Object.assign(this.config, inputsConfig));
+        this.ngZone.runOutsideAngular(function () {
+            _this.slider = Object(nouislider__WEBPACK_IMPORTED_MODULE_0__["create"])(_this.el.nativeElement.querySelector('div'), Object.assign(_this.config, inputsConfig));
+        });
         this.handles = [].slice.call(this.el.nativeElement.querySelectorAll('.noUi-handle'));
         if (this.config.keyboard) {
             if (this.config.pageSteps === undefined) {
@@ -1189,15 +1197,12 @@ var NouisliderComponent = (function () {
             }
             var _loop_1 = function (handle) {
                 handle.setAttribute('tabindex', 0);
-                handle.addEventListener('click', function () {
-                    handle.focus();
+                var /** @type {?} */ onKeydown = this_1.config.onKeydown || this_1.defaultKeyHandler;
+                this_1.ngZone.runOutsideAngular(function () {
+                    _this.cleanups.push(_this.renderer.listen(handle, 'keydown', onKeydown), _this.renderer.listen(handle, 'click', function () {
+                        handle.focus();
+                    }));
                 });
-                if (this_1.config.onKeydown === undefined) {
-                    handle.addEventListener('keydown', this_1.defaultKeyHandler);
-                }
-                else {
-                    handle.addEventListener('keydown', this_1.config.onKeydown);
-                }
             };
             var this_1 = this;
             for (var _i = 0, _a = this.handles; _i < _a.length; _i++) {
@@ -1209,19 +1214,35 @@ var NouisliderComponent = (function () {
             _this.eventHandler(_this.set, values, handle, unencoded);
         });
         this.slider.on('update', function (values, handle, unencoded) {
-            _this.update.emit(_this.toValues(values));
+            if (_this.update.observers.length > 0) {
+                _this.ngZone.run(function () {
+                    _this.update.emit(_this.toValues(values));
+                });
+            }
         });
         this.slider.on('change', function (values, handle, unencoded) {
-            _this.change.emit(_this.toValues(values));
+            if (_this.change.observers.length > 0) {
+                _this.ngZone.run(function () {
+                    _this.change.emit(_this.toValues(values));
+                });
+            }
         });
         this.slider.on('slide', function (values, handle, unencoded) {
             _this.eventHandler(_this.slide, values, handle, unencoded);
         });
         this.slider.on('start', function (values, handle, unencoded) {
-            _this.start.emit(_this.toValues(values));
+            if (_this.start.observers.length > 0) {
+                _this.ngZone.run(function () {
+                    _this.start.emit(_this.toValues(values));
+                });
+            }
         });
         this.slider.on('end', function (values, handle, unencoded) {
-            _this.end.emit(_this.toValues(values));
+            if (_this.end.observers.length > 0) {
+                _this.ngZone.run(function () {
+                    _this.end.emit(_this.toValues(values));
+                });
+            }
         });
     };
     /**
@@ -1231,15 +1252,26 @@ var NouisliderComponent = (function () {
     NouisliderComponent.prototype.ngOnChanges = function (changes) {
         var _this = this;
         if (this.slider && (changes.min || changes.max || changes.step || changes.range)) {
-            setTimeout(function () {
-                _this.slider.updateOptions({
-                    range: Object.assign({}, {
-                        min: _this.min,
-                        max: _this.max
-                    }, _this.range || {}),
-                    step: _this.step
+            this.ngZone.runOutsideAngular(function () {
+                setTimeout(function () {
+                    _this.slider.updateOptions({
+                        range: Object.assign({}, {
+                            min: _this.min,
+                            max: _this.max
+                        }, _this.range || {}),
+                        step: _this.step
+                    });
                 });
             });
+        }
+    };
+    /**
+     * @return {?}
+     */
+    NouisliderComponent.prototype.ngOnDestroy = function () {
+        this.slider.destroy();
+        while (this.cleanups.length) {
+            this.cleanups.pop()();
         }
     };
     /**
@@ -1257,8 +1289,10 @@ var NouisliderComponent = (function () {
     NouisliderComponent.prototype.writeValue = function (value) {
         var _this = this;
         if (this.slider) {
-            setTimeout(function () {
-                _this.slider.set(value);
+            this.ngZone.runOutsideAngular(function () {
+                setTimeout(function () {
+                    _this.slider.set(value);
+                });
             });
         }
     };
@@ -1273,9 +1307,7 @@ var NouisliderComponent = (function () {
      * @param {?} fn
      * @return {?}
      */
-    NouisliderComponent.prototype.registerOnTouched = function (fn) {
-        this.onTouched = fn;
-    };
+    NouisliderComponent.prototype.registerOnTouched = function (fn) { };
     /**
      * @param {?} isDisabled
      * @return {?}
@@ -1308,6 +1340,7 @@ NouisliderComponent.decorators = [
  * @nocollapse
  */
 NouisliderComponent.ctorParameters = function () { return [
+    { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["NgZone"], },
     { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["ElementRef"], },
     { type: _angular_core__WEBPACK_IMPORTED_MODULE_1__["Renderer2"], },
 ]; };
@@ -1368,10 +1401,9 @@ NouisliderModule.ctorParameters = function () { return []; };
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*! nouislider - 14.5.0 - 5/11/2020 */
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*! nouislider - 14.7.0 - 4/6/2021 */
 (function(factory) {
     if (true) {
-        // AMD. Register as an anonymous module.
         !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
 				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
 				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
@@ -1379,120 +1411,95 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
     } else {}
 })(function() {
     "use strict";
-
-    var VERSION = "14.5.0";
-
+    var VERSION = "14.7.0";
     //region Helper Methods
-
     function isValidFormatter(entry) {
         return typeof entry === "object" && typeof entry.to === "function" && typeof entry.from === "function";
     }
-
     function removeElement(el) {
         el.parentElement.removeChild(el);
     }
-
     function isSet(value) {
         return value !== null && value !== undefined;
     }
-
     // Bindable version
     function preventDefault(e) {
         e.preventDefault();
     }
-
     // Removes duplicates from an array.
     function unique(array) {
-        return array.filter(function(a) {
+        return array.filter(function (a) {
             return !this[a] ? (this[a] = true) : false;
         }, {});
     }
-
     // Round a value to the closest 'to'.
     function closest(value, to) {
         return Math.round(value / to) * to;
     }
-
     // Current position of an element relative to the document.
     function offset(elem, orientation) {
         var rect = elem.getBoundingClientRect();
         var doc = elem.ownerDocument;
         var docElem = doc.documentElement;
         var pageOffset = getPageOffset(doc);
-
         // getBoundingClientRect contains left scroll in Chrome on Android.
         // I haven't found a feature detection that proves this. Worst case
         // scenario on mis-match: the 'tap' feature on horizontal sliders breaks.
         if (/webkit.*Chrome.*Mobile/i.test(navigator.userAgent)) {
             pageOffset.x = 0;
         }
-
-        return orientation
-            ? rect.top + pageOffset.y - docElem.clientTop
-            : rect.left + pageOffset.x - docElem.clientLeft;
+        return orientation ? rect.top + pageOffset.y - docElem.clientTop : rect.left + pageOffset.x - docElem.clientLeft;
     }
-
     // Checks whether a value is numerical.
     function isNumeric(a) {
         return typeof a === "number" && !isNaN(a) && isFinite(a);
     }
-
     // Sets a class and removes it after [duration] ms.
     function addClassFor(element, className, duration) {
         if (duration > 0) {
             addClass(element, className);
-            setTimeout(function() {
+            setTimeout(function () {
                 removeClass(element, className);
             }, duration);
         }
     }
-
     // Limits a value to 0 - 100
     function limit(a) {
         return Math.max(Math.min(a, 100), 0);
     }
-
     // Wraps a variable as an array, if it isn't one yet.
     // Note that an input array is returned by reference!
     function asArray(a) {
         return Array.isArray(a) ? a : [a];
     }
-
     // Counts decimals
     function countDecimals(numStr) {
         numStr = String(numStr);
         var pieces = numStr.split(".");
         return pieces.length > 1 ? pieces[1].length : 0;
     }
-
     // http://youmightnotneedjquery.com/#add_class
     function addClass(el, className) {
         if (el.classList && !/\s/.test(className)) {
             el.classList.add(className);
-        } else {
+        }
+        else {
             el.className += " " + className;
         }
     }
-
     // http://youmightnotneedjquery.com/#remove_class
     function removeClass(el, className) {
         if (el.classList && !/\s/.test(className)) {
             el.classList.remove(className);
-        } else {
-            el.className = el.className.replace(
-                new RegExp("(^|\\b)" + className.split(" ").join("|") + "(\\b|$)", "gi"),
-                " "
-            );
+        }
+        else {
+            el.className = el.className.replace(new RegExp("(^|\\b)" + className.split(" ").join("|") + "(\\b|$)", "gi"), " ");
         }
     }
-
     // https://plainjs.com/javascript/attributes/adding-removing-and-testing-for-classes-9/
     function hasClass(el, className) {
-        return el.classList
-            ? el.classList.contains(className)
-            : new RegExp("\\b" + className + "\\b").test(el.className);
+        return el.classList ? el.classList.contains(className) : new RegExp("\\b" + className + "\\b").test(el.className);
     }
-
     // https://developer.mozilla.org/en-US/docs/Web/API/Window/scrollY#Notes
     function getPageOffset(doc) {
         var supportPageOffset = window.pageXOffset !== undefined;
@@ -1502,18 +1509,12 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             : isCSS1Compat
                 ? doc.documentElement.scrollLeft
                 : doc.body.scrollLeft;
-        var y = supportPageOffset
-            ? window.pageYOffset
-            : isCSS1Compat
-                ? doc.documentElement.scrollTop
-                : doc.body.scrollTop;
-
+        var y = supportPageOffset ? window.pageYOffset : isCSS1Compat ? doc.documentElement.scrollTop : doc.body.scrollTop;
         return {
             x: x,
             y: y
         };
     }
-
     // we provide a function to compute constants instead
     // of accessing window.* as soon as the module needs it
     // so that we do not compute anything if not needed
@@ -1522,170 +1523,140 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         // a prefix, which breaks compatibility with the IE10 implementation.
         return window.navigator.pointerEnabled
             ? {
-                  start: "pointerdown",
-                  move: "pointermove",
-                  end: "pointerup"
-              }
+                start: "pointerdown",
+                move: "pointermove",
+                end: "pointerup"
+            }
             : window.navigator.msPointerEnabled
                 ? {
-                      start: "MSPointerDown",
-                      move: "MSPointerMove",
-                      end: "MSPointerUp"
-                  }
+                    start: "MSPointerDown",
+                    move: "MSPointerMove",
+                    end: "MSPointerUp"
+                }
                 : {
-                      start: "mousedown touchstart",
-                      move: "mousemove touchmove",
-                      end: "mouseup touchend"
-                  };
+                    start: "mousedown touchstart",
+                    move: "mousemove touchmove",
+                    end: "mouseup touchend"
+                };
     }
-
     // https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
     // Issue #785
     function getSupportsPassive() {
         var supportsPassive = false;
-
         /* eslint-disable */
         try {
             var opts = Object.defineProperty({}, "passive", {
-                get: function() {
+                get: function () {
                     supportsPassive = true;
                 }
             });
-
             window.addEventListener("test", null, opts);
-        } catch (e) {}
+        }
+        catch (e) { }
         /* eslint-enable */
-
         return supportsPassive;
     }
-
     function getSupportsTouchActionNone() {
         return window.CSS && CSS.supports && CSS.supports("touch-action", "none");
     }
-
     //endregion
-
     //region Range Calculation
-
     // Determine the size of a sub-range in relation to a full range.
     function subRangeRatio(pa, pb) {
         return 100 / (pb - pa);
     }
-
     // (percentage) How many percent is this value of this range?
     function fromPercentage(range, value, startRange) {
         return (value * 100) / (range[startRange + 1] - range[startRange]);
     }
-
     // (percentage) Where is this value on this range?
     function toPercentage(range, value) {
         return fromPercentage(range, range[0] < 0 ? value + Math.abs(range[0]) : value - range[0], 0);
     }
-
     // (value) How much is this percentage on this range?
     function isPercentage(range, value) {
         return (value * (range[1] - range[0])) / 100 + range[0];
     }
-
     function getJ(value, arr) {
         var j = 1;
-
         while (value >= arr[j]) {
             j += 1;
         }
-
         return j;
     }
-
     // (percentage) Input a value, find where, on a scale of 0-100, it applies.
     function toStepping(xVal, xPct, value) {
         if (value >= xVal.slice(-1)[0]) {
             return 100;
         }
-
         var j = getJ(value, xVal);
         var va = xVal[j - 1];
         var vb = xVal[j];
         var pa = xPct[j - 1];
         var pb = xPct[j];
-
         return pa + toPercentage([va, vb], value) / subRangeRatio(pa, pb);
     }
-
     // (value) Input a percentage, find where it is on the specified range.
     function fromStepping(xVal, xPct, value) {
         // There is no range group that fits 100
         if (value >= 100) {
             return xVal.slice(-1)[0];
         }
-
         var j = getJ(value, xPct);
         var va = xVal[j - 1];
         var vb = xVal[j];
         var pa = xPct[j - 1];
         var pb = xPct[j];
-
         return isPercentage([va, vb], (value - pa) * subRangeRatio(pa, pb));
     }
-
     // (percentage) Get the step that applies at a certain value.
     function getStep(xPct, xSteps, snap, value) {
         if (value === 100) {
             return value;
         }
-
         var j = getJ(value, xPct);
         var a = xPct[j - 1];
         var b = xPct[j];
-
         // If 'snap' is set, steps are used as fixed points on the slider.
         if (snap) {
             // Find the closest position, a or b.
             if (value - a > (b - a) / 2) {
                 return b;
             }
-
             return a;
         }
-
         if (!xSteps[j - 1]) {
             return value;
         }
-
         return xPct[j - 1] + closest(value - xPct[j - 1], xSteps[j - 1]);
     }
-
     function handleEntryPoint(index, value, that) {
         var percentage;
-
         // Wrap numerical input in an array.
         if (typeof value === "number") {
             value = [value];
         }
-
         // Reject any invalid input, by testing whether value is an array.
         if (!Array.isArray(value)) {
             throw new Error("noUiSlider (" + VERSION + "): 'range' contains invalid value.");
         }
-
         // Covert min/max syntax to 0 and 100.
         if (index === "min") {
             percentage = 0;
-        } else if (index === "max") {
+        }
+        else if (index === "max") {
             percentage = 100;
-        } else {
+        }
+        else {
             percentage = parseFloat(index);
         }
-
         // Check for correct input.
         if (!isNumeric(percentage) || !isNumeric(value[0])) {
             throw new Error("noUiSlider (" + VERSION + "): 'range' value isn't numeric.");
         }
-
         // Store values.
         that.xPct.push(percentage);
         that.xVal.push(value[0]);
-
         // NaN will evaluate to false too, but to keep
         // logging clear, set step explicitly. Make sure
         // not to override the 'step' setting with false.
@@ -1693,153 +1664,123 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             if (!isNaN(value[1])) {
                 that.xSteps[0] = value[1];
             }
-        } else {
+        }
+        else {
             that.xSteps.push(isNaN(value[1]) ? false : value[1]);
         }
-
         that.xHighestCompleteStep.push(0);
     }
-
     function handleStepPoint(i, n, that) {
         // Ignore 'false' stepping.
         if (!n) {
             return;
         }
-
         // Step over zero-length ranges (#948);
         if (that.xVal[i] === that.xVal[i + 1]) {
             that.xSteps[i] = that.xHighestCompleteStep[i] = that.xVal[i];
-
             return;
         }
-
         // Factor to range ratio
         that.xSteps[i] =
             fromPercentage([that.xVal[i], that.xVal[i + 1]], n, 0) / subRangeRatio(that.xPct[i], that.xPct[i + 1]);
-
         var totalSteps = (that.xVal[i + 1] - that.xVal[i]) / that.xNumSteps[i];
         var highestStep = Math.ceil(Number(totalSteps.toFixed(3)) - 1);
         var step = that.xVal[i] + that.xNumSteps[i] * highestStep;
-
         that.xHighestCompleteStep[i] = step;
     }
-
     //endregion
-
     //region Spectrum
-
     function Spectrum(entry, snap, singleStep) {
         this.xPct = [];
         this.xVal = [];
         this.xSteps = [singleStep || false];
         this.xNumSteps = [false];
         this.xHighestCompleteStep = [];
-
         this.snap = snap;
-
         var index;
         var ordered = []; // [0, 'min'], [1, '50%'], [2, 'max']
-
         // Map the object keys to an array.
         for (index in entry) {
             if (entry.hasOwnProperty(index)) {
                 ordered.push([entry[index], index]);
             }
         }
-
         // Sort all entries by value (numeric sort).
         if (ordered.length && typeof ordered[0][0] === "object") {
-            ordered.sort(function(a, b) {
+            ordered.sort(function (a, b) {
                 return a[0][0] - b[0][0];
             });
-        } else {
-            ordered.sort(function(a, b) {
+        }
+        else {
+            ordered.sort(function (a, b) {
                 return a[0] - b[0];
             });
         }
-
         // Convert all entries to subranges.
         for (index = 0; index < ordered.length; index++) {
             handleEntryPoint(ordered[index][1], ordered[index][0], this);
         }
-
         // Store the actual step values.
         // xSteps is sorted in the same order as xPct and xVal.
         this.xNumSteps = this.xSteps.slice(0);
-
         // Convert all numeric steps to the percentage of the subrange they represent.
         for (index = 0; index < this.xNumSteps.length; index++) {
             handleStepPoint(index, this.xNumSteps[index], this);
         }
     }
-
-    Spectrum.prototype.getDistance = function(value) {
+    Spectrum.prototype.getDistance = function (value) {
         var index;
         var distances = [];
-
         for (index = 0; index < this.xNumSteps.length - 1; index++) {
             // last "range" can't contain step size as it is purely an endpoint.
             var step = this.xNumSteps[index];
-
             if (step && (value / step) % 1 !== 0) {
-                throw new Error(
-                    "noUiSlider (" +
-                        VERSION +
-                        "): 'limit', 'margin' and 'padding' of " +
-                        this.xPct[index] +
-                        "% range must be divisible by step."
-                );
+                throw new Error("noUiSlider (" +
+                    VERSION +
+                    "): 'limit', 'margin' and 'padding' of " +
+                    this.xPct[index] +
+                    "% range must be divisible by step.");
             }
-
             // Calculate percentual distance in current range of limit, margin or padding
             distances[index] = fromPercentage(this.xVal, value, index);
         }
-
         return distances;
     };
-
     // Calculate the percentual distance over the whole scale of ranges.
     // direction: 0 = backwards / 1 = forwards
-    Spectrum.prototype.getAbsoluteDistance = function(value, distances, direction) {
+    Spectrum.prototype.getAbsoluteDistance = function (value, distances, direction) {
         var xPct_index = 0;
-
         // Calculate range where to start calculation
         if (value < this.xPct[this.xPct.length - 1]) {
             while (value > this.xPct[xPct_index + 1]) {
                 xPct_index++;
             }
-        } else if (value === this.xPct[this.xPct.length - 1]) {
+        }
+        else if (value === this.xPct[this.xPct.length - 1]) {
             xPct_index = this.xPct.length - 2;
         }
-
         // If looking backwards and the value is exactly at a range separator then look one range further
         if (!direction && value === this.xPct[xPct_index + 1]) {
             xPct_index++;
         }
-
         var start_factor;
         var rest_factor = 1;
-
         var rest_rel_distance = distances[xPct_index];
-
         var range_pct = 0;
-
         var rel_range_distance = 0;
         var abs_distance_counter = 0;
         var range_counter = 0;
-
         // Calculate what part of the start range the value is
         if (direction) {
             start_factor = (value - this.xPct[xPct_index]) / (this.xPct[xPct_index + 1] - this.xPct[xPct_index]);
-        } else {
+        }
+        else {
             start_factor = (this.xPct[xPct_index + 1] - value) / (this.xPct[xPct_index + 1] - this.xPct[xPct_index]);
         }
-
         // Do until the complete distance across ranges is calculated
         while (rest_rel_distance > 0) {
             // Calculate the percentage of total range
             range_pct = this.xPct[xPct_index + 1 + range_counter] - this.xPct[xPct_index + range_counter];
-
             // Detect if the margin, padding or limit is larger then the current range and calculate
             if (distances[xPct_index + range_counter] * rest_factor + 100 - start_factor * 100 > 100) {
                 // If larger then take the percentual distance of the whole range
@@ -1848,64 +1789,53 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 rest_factor = (rest_rel_distance - 100 * start_factor) / distances[xPct_index + range_counter];
                 // Set start factor to 1 as for next range it does not apply.
                 start_factor = 1;
-            } else {
+            }
+            else {
                 // If smaller or equal then take the percentual distance of the calculate percentual part of that range
                 rel_range_distance = ((distances[xPct_index + range_counter] * range_pct) / 100) * rest_factor;
                 // No rest left as the rest fits in current range
                 rest_factor = 0;
             }
-
             if (direction) {
                 abs_distance_counter = abs_distance_counter - rel_range_distance;
                 // Limit range to first range when distance becomes outside of minimum range
                 if (this.xPct.length + range_counter >= 1) {
                     range_counter--;
                 }
-            } else {
+            }
+            else {
                 abs_distance_counter = abs_distance_counter + rel_range_distance;
                 // Limit range to last range when distance becomes outside of maximum range
                 if (this.xPct.length - range_counter >= 1) {
                     range_counter++;
                 }
             }
-
             // Rest of relative percentual distance still to be calculated
             rest_rel_distance = distances[xPct_index + range_counter] * rest_factor;
         }
-
         return value + abs_distance_counter;
     };
-
-    Spectrum.prototype.toStepping = function(value) {
+    Spectrum.prototype.toStepping = function (value) {
         value = toStepping(this.xVal, this.xPct, value);
-
         return value;
     };
-
-    Spectrum.prototype.fromStepping = function(value) {
+    Spectrum.prototype.fromStepping = function (value) {
         return fromStepping(this.xVal, this.xPct, value);
     };
-
-    Spectrum.prototype.getStep = function(value) {
+    Spectrum.prototype.getStep = function (value) {
         value = getStep(this.xPct, this.xSteps, this.snap, value);
-
         return value;
     };
-
-    Spectrum.prototype.getDefaultStep = function(value, isDown, size) {
+    Spectrum.prototype.getDefaultStep = function (value, isDown, size) {
         var j = getJ(value, this.xPct);
-
         // When at the top or stepping down, look at the previous sub-range
         if (value === 100 || (isDown && value === this.xPct[j - 1])) {
             j = Math.max(j - 1, 1);
         }
-
         return (this.xVal[j] - this.xVal[j - 1]) / size;
     };
-
-    Spectrum.prototype.getNearbySteps = function(value) {
+    Spectrum.prototype.getNearbySteps = function (value) {
         var j = getJ(value, this.xPct);
-
         return {
             stepBefore: {
                 startValue: this.xVal[j - 2],
@@ -1924,21 +1854,16 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             }
         };
     };
-
-    Spectrum.prototype.countStepDecimals = function() {
+    Spectrum.prototype.countStepDecimals = function () {
         var stepDecimals = this.xNumSteps.map(countDecimals);
         return Math.max.apply(null, stepDecimals);
     };
-
     // Outside testing
-    Spectrum.prototype.convert = function(value) {
+    Spectrum.prototype.convert = function (value) {
         return this.getStep(this.toStepping(value));
     };
-
     //endregion
-
     //region Options
-
     /*	Every input option is tested and parsed. This'll prevent
         endless validation in internal methods. These tests are
         structured with an item for every option available. An
@@ -1947,20 +1872,17 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             - The provided value for the option;
             - A reference to the options object;
             - The name for the option;
-
+    
         The testing function returns false when an error is detected,
         or true when everything is OK. It can also modify the option
         object, to make sure all values can be correctly looped elsewhere. */
-
     //region Defaults
-
     var defaultFormatter = {
-        to: function(value) {
+        to: function (value) {
             return value !== undefined && value.toFixed(2);
         },
         from: Number
     };
-
     var cssClasses = {
         target: "target",
         base: "base",
@@ -1999,120 +1921,113 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         valueLarge: "value-large",
         valueSub: "value-sub"
     };
-
+    // Namespaces of internal event listeners
+    var INTERNAL_EVENT_NS = {
+        tooltips: ".__tooltips",
+        aria: ".__aria"
+    };
     //endregion
-
     function validateFormat(entry) {
         // Any object with a to and from method is supported.
         if (isValidFormatter(entry)) {
             return true;
         }
-
         throw new Error("noUiSlider (" + VERSION + "): 'format' requires 'to' and 'from' methods.");
     }
-
     function testStep(parsed, entry) {
         if (!isNumeric(entry)) {
             throw new Error("noUiSlider (" + VERSION + "): 'step' is not numeric.");
         }
-
         // The step option can still be used to set stepping
         // for linear sliders. Overwritten if set in 'range'.
         parsed.singleStep = entry;
     }
-
+    function testKeyboardPageMultiplier(parsed, entry) {
+        if (!isNumeric(entry)) {
+            throw new Error("noUiSlider (" + VERSION + "): 'keyboardPageMultiplier' is not numeric.");
+        }
+        parsed.keyboardPageMultiplier = entry;
+    }
+    function testKeyboardDefaultStep(parsed, entry) {
+        if (!isNumeric(entry)) {
+            throw new Error("noUiSlider (" + VERSION + "): 'keyboardDefaultStep' is not numeric.");
+        }
+        parsed.keyboardDefaultStep = entry;
+    }
     function testRange(parsed, entry) {
         // Filter incorrect input.
         if (typeof entry !== "object" || Array.isArray(entry)) {
             throw new Error("noUiSlider (" + VERSION + "): 'range' is not an object.");
         }
-
         // Catch missing start or end.
         if (entry.min === undefined || entry.max === undefined) {
             throw new Error("noUiSlider (" + VERSION + "): Missing 'min' or 'max' in 'range'.");
         }
-
         // Catch equal start or end.
         if (entry.min === entry.max) {
             throw new Error("noUiSlider (" + VERSION + "): 'range' 'min' and 'max' cannot be equal.");
         }
-
         parsed.spectrum = new Spectrum(entry, parsed.snap, parsed.singleStep);
     }
-
     function testStart(parsed, entry) {
         entry = asArray(entry);
-
         // Validate input. Values aren't tested, as the public .val method
         // will always provide a valid location.
         if (!Array.isArray(entry) || !entry.length) {
             throw new Error("noUiSlider (" + VERSION + "): 'start' option is incorrect.");
         }
-
         // Store the number of handles.
         parsed.handles = entry.length;
-
         // When the slider is initialized, the .val method will
         // be called with the start options.
         parsed.start = entry;
     }
-
     function testSnap(parsed, entry) {
         // Enforce 100% stepping within subranges.
         parsed.snap = entry;
-
         if (typeof entry !== "boolean") {
             throw new Error("noUiSlider (" + VERSION + "): 'snap' option must be a boolean.");
         }
     }
-
     function testAnimate(parsed, entry) {
         // Enforce 100% stepping within subranges.
         parsed.animate = entry;
-
         if (typeof entry !== "boolean") {
             throw new Error("noUiSlider (" + VERSION + "): 'animate' option must be a boolean.");
         }
     }
-
     function testAnimationDuration(parsed, entry) {
         parsed.animationDuration = entry;
-
         if (typeof entry !== "number") {
             throw new Error("noUiSlider (" + VERSION + "): 'animationDuration' option must be a number.");
         }
     }
-
     function testConnect(parsed, entry) {
         var connect = [false];
         var i;
-
         // Map legacy options
         if (entry === "lower") {
             entry = [true, false];
-        } else if (entry === "upper") {
+        }
+        else if (entry === "upper") {
             entry = [false, true];
         }
-
         // Handle boolean options
         if (entry === true || entry === false) {
             for (i = 1; i < parsed.handles; i++) {
                 connect.push(entry);
             }
-
             connect.push(false);
         }
-
         // Reject invalid input
         else if (!Array.isArray(entry) || !entry.length || entry.length !== parsed.handles + 1) {
             throw new Error("noUiSlider (" + VERSION + "): 'connect' option doesn't match handle count.");
-        } else {
+        }
+        else {
             connect = entry;
         }
-
         parsed.connect = connect;
     }
-
     function testOrientation(parsed, entry) {
         // Set orientation to an a numerical value for easy
         // array selection.
@@ -2127,78 +2042,54 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 throw new Error("noUiSlider (" + VERSION + "): 'orientation' option is invalid.");
         }
     }
-
     function testMargin(parsed, entry) {
         if (!isNumeric(entry)) {
             throw new Error("noUiSlider (" + VERSION + "): 'margin' option must be numeric.");
         }
-
         // Issue #582
         if (entry === 0) {
             return;
         }
-
         parsed.margin = parsed.spectrum.getDistance(entry);
     }
-
     function testLimit(parsed, entry) {
         if (!isNumeric(entry)) {
             throw new Error("noUiSlider (" + VERSION + "): 'limit' option must be numeric.");
         }
-
         parsed.limit = parsed.spectrum.getDistance(entry);
-
         if (!parsed.limit || parsed.handles < 2) {
-            throw new Error(
-                "noUiSlider (" +
-                    VERSION +
-                    "): 'limit' option is only supported on linear sliders with 2 or more handles."
-            );
+            throw new Error("noUiSlider (" + VERSION + "): 'limit' option is only supported on linear sliders with 2 or more handles.");
         }
     }
-
     function testPadding(parsed, entry) {
         var index;
-
         if (!isNumeric(entry) && !Array.isArray(entry)) {
-            throw new Error(
-                "noUiSlider (" + VERSION + "): 'padding' option must be numeric or array of exactly 2 numbers."
-            );
+            throw new Error("noUiSlider (" + VERSION + "): 'padding' option must be numeric or array of exactly 2 numbers.");
         }
-
         if (Array.isArray(entry) && !(entry.length === 2 || isNumeric(entry[0]) || isNumeric(entry[1]))) {
-            throw new Error(
-                "noUiSlider (" + VERSION + "): 'padding' option must be numeric or array of exactly 2 numbers."
-            );
+            throw new Error("noUiSlider (" + VERSION + "): 'padding' option must be numeric or array of exactly 2 numbers.");
         }
-
         if (entry === 0) {
             return;
         }
-
         if (!Array.isArray(entry)) {
             entry = [entry, entry];
         }
-
         // 'getDistance' returns false for invalid values.
         parsed.padding = [parsed.spectrum.getDistance(entry[0]), parsed.spectrum.getDistance(entry[1])];
-
         for (index = 0; index < parsed.spectrum.xNumSteps.length - 1; index++) {
             // last "range" can't contain step size as it is purely an endpoint.
             if (parsed.padding[0][index] < 0 || parsed.padding[1][index] < 0) {
                 throw new Error("noUiSlider (" + VERSION + "): 'padding' option must be a positive number(s).");
             }
         }
-
         var totalPadding = entry[0] + entry[1];
         var firstValue = parsed.spectrum.xVal[0];
         var lastValue = parsed.spectrum.xVal[parsed.spectrum.xVal.length - 1];
-
         if (totalPadding / (lastValue - firstValue) > 1) {
             throw new Error("noUiSlider (" + VERSION + "): 'padding' option must not exceed 100% of the range.");
         }
     }
-
     function testDirection(parsed, entry) {
         // Set direction as a numerical value for easy parsing.
         // Invert connection for RTL sliders, so that the proper
@@ -2214,13 +2105,11 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 throw new Error("noUiSlider (" + VERSION + "): 'direction' option was not recognized.");
         }
     }
-
     function testBehaviour(parsed, entry) {
         // Make sure the input is a string.
         if (typeof entry !== "string") {
             throw new Error("noUiSlider (" + VERSION + "): 'behaviour' must be a string containing options.");
         }
-
         // Check if the string contains any keywords.
         // None are required.
         var tap = entry.indexOf("tap") >= 0;
@@ -2229,22 +2118,16 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         var snap = entry.indexOf("snap") >= 0;
         var hover = entry.indexOf("hover") >= 0;
         var unconstrained = entry.indexOf("unconstrained") >= 0;
-
         if (fixed) {
             if (parsed.handles !== 2) {
                 throw new Error("noUiSlider (" + VERSION + "): 'fixed' behaviour must be used with 2 handles");
             }
-
             // Use margin to enforce fixed state
             testMargin(parsed, parsed.start[1] - parsed.start[0]);
         }
-
         if (unconstrained && (parsed.margin || parsed.limit)) {
-            throw new Error(
-                "noUiSlider (" + VERSION + "): 'unconstrained' behaviour cannot be used with margin or limit"
-            );
+            throw new Error("noUiSlider (" + VERSION + "): 'unconstrained' behaviour cannot be used with margin or limit");
         }
-
         parsed.events = {
             tap: tap || snap,
             drag: drag,
@@ -2254,93 +2137,75 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             unconstrained: unconstrained
         };
     }
-
     function testTooltips(parsed, entry) {
         if (entry === false) {
             return;
         }
-
         if (entry === true) {
             parsed.tooltips = [];
-
             for (var i = 0; i < parsed.handles; i++) {
                 parsed.tooltips.push(true);
             }
-        } else {
+        }
+        else {
             parsed.tooltips = asArray(entry);
-
             if (parsed.tooltips.length !== parsed.handles) {
                 throw new Error("noUiSlider (" + VERSION + "): must pass a formatter for all handles.");
             }
-
-            parsed.tooltips.forEach(function(formatter) {
-                if (
-                    typeof formatter !== "boolean" &&
-                    (typeof formatter !== "object" || typeof formatter.to !== "function")
-                ) {
+            parsed.tooltips.forEach(function (formatter) {
+                if (typeof formatter !== "boolean" &&
+                    (typeof formatter !== "object" || typeof formatter.to !== "function")) {
                     throw new Error("noUiSlider (" + VERSION + "): 'tooltips' must be passed a formatter or 'false'.");
                 }
             });
         }
     }
-
     function testAriaFormat(parsed, entry) {
         parsed.ariaFormat = entry;
         validateFormat(entry);
     }
-
     function testFormat(parsed, entry) {
         parsed.format = entry;
         validateFormat(entry);
     }
-
     function testKeyboardSupport(parsed, entry) {
         parsed.keyboardSupport = entry;
-
         if (typeof entry !== "boolean") {
             throw new Error("noUiSlider (" + VERSION + "): 'keyboardSupport' option must be a boolean.");
         }
     }
-
     function testDocumentElement(parsed, entry) {
         // This is an advanced option. Passed values are used without validation.
         parsed.documentElement = entry;
     }
-
     function testCssPrefix(parsed, entry) {
         if (typeof entry !== "string" && entry !== false) {
             throw new Error("noUiSlider (" + VERSION + "): 'cssPrefix' must be a string or `false`.");
         }
-
         parsed.cssPrefix = entry;
     }
-
     function testCssClasses(parsed, entry) {
         if (typeof entry !== "object") {
             throw new Error("noUiSlider (" + VERSION + "): 'cssClasses' must be an object.");
         }
-
         if (typeof parsed.cssPrefix === "string") {
             parsed.cssClasses = {};
-
             for (var key in entry) {
                 if (!entry.hasOwnProperty(key)) {
                     continue;
                 }
-
                 parsed.cssClasses[key] = parsed.cssPrefix + entry[key];
             }
-        } else {
+        }
+        else {
             parsed.cssClasses = entry;
         }
     }
-
     // Test all developer settings and parse to assumption-safe values.
     function testOptions(options) {
         // To prove a fix for #537, freeze options here.
         // If the object is modified, an error will be thrown.
         // Object.freeze(options);
-
         var parsed = {
             margin: 0,
             limit: 0,
@@ -2350,10 +2215,11 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             ariaFormat: defaultFormatter,
             format: defaultFormatter
         };
-
         // Tests are executed in the order they are presented here.
         var tests = {
             step: { r: false, t: testStep },
+            keyboardPageMultiplier: { r: false, t: testKeyboardPageMultiplier },
+            keyboardDefaultStep: { r: false, t: testKeyboardDefaultStep },
             start: { r: true, t: testStart },
             connect: { r: true, t: testConnect },
             direction: { r: true, t: testDirection },
@@ -2374,7 +2240,6 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             cssPrefix: { r: true, t: testCssPrefix },
             cssClasses: { r: true, t: testCssClasses }
         };
-
         var defaults = {
             connect: false,
             direction: "ltr",
@@ -2382,33 +2247,29 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             orientation: "horizontal",
             keyboardSupport: true,
             cssPrefix: "noUi-",
-            cssClasses: cssClasses
+            cssClasses: cssClasses,
+            keyboardPageMultiplier: 5,
+            keyboardDefaultStep: 10
         };
-
         // AriaFormat defaults to regular format, if any.
         if (options.format && !options.ariaFormat) {
             options.ariaFormat = options.format;
         }
-
         // Run all options through a testing mechanism to ensure correct
         // input. It should be noted that options might get modified to
         // be handled properly. E.g. wrapping integers in arrays.
-        Object.keys(tests).forEach(function(name) {
+        Object.keys(tests).forEach(function (name) {
             // If the option isn't set, but it is required, throw an error.
             if (!isSet(options[name]) && defaults[name] === undefined) {
                 if (tests[name].r) {
                     throw new Error("noUiSlider (" + VERSION + "): '" + name + "' is required.");
                 }
-
                 return true;
             }
-
             tests[name].t(parsed, !isSet(options[name]) ? defaults[name] : options[name]);
         });
-
         // Forward pips options
         parsed.pips = options.pips;
-
         // All recent browsers accept unprefixed transform.
         // We need -ms- for IE9 and -webkit- for older Android;
         // Assume use of -webkit- if unprefixed and -ms- are not supported.
@@ -2416,26 +2277,18 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         var d = document.createElement("div");
         var msPrefix = d.style.msTransform !== undefined;
         var noPrefix = d.style.transform !== undefined;
-
         parsed.transformRule = noPrefix ? "transform" : msPrefix ? "msTransform" : "webkitTransform";
-
         // Pips don't move, so we can place them using left/top.
         var styles = [["left", "top"], ["right", "bottom"]];
-
         parsed.style = styles[parsed.dir][parsed.ort];
-
         return parsed;
     }
-
     //endregion
-
     function scope(target, options, originalOptions) {
         var actions = getActions();
         var supportsTouchActionNone = getSupportsTouchActionNone();
         var supportsPassive = supportsTouchActionNone && getSupportsPassive();
-
         // All variables local to 'scope' are prefixed with 'scope_'
-
         // Slider DOM Nodes
         var scope_Target = target;
         var scope_Base;
@@ -2443,7 +2296,6 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         var scope_Connects;
         var scope_Pips;
         var scope_Tooltips;
-
         // Slider state values
         var scope_Spectrum = options.spectrum;
         var scope_Values = [];
@@ -2451,89 +2303,68 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         var scope_HandleNumbers = [];
         var scope_ActiveHandlesCount = 0;
         var scope_Events = {};
-
         // Exposed API
         var scope_Self;
-
         // Document Nodes
         var scope_Document = target.ownerDocument;
         var scope_DocumentElement = options.documentElement || scope_Document.documentElement;
         var scope_Body = scope_Document.body;
-
         // Pips constants
         var PIPS_NONE = -1;
         var PIPS_NO_VALUE = 0;
         var PIPS_LARGE_VALUE = 1;
         var PIPS_SMALL_VALUE = 2;
-
         // For horizontal sliders in standard ltr documents,
         // make .noUi-origin overflow to the left so the document doesn't scroll.
         var scope_DirOffset = scope_Document.dir === "rtl" || options.ort === 1 ? 0 : 100;
-
         // Creates a node, adds it to target, returns the new node.
         function addNodeTo(addTarget, className) {
             var div = scope_Document.createElement("div");
-
             if (className) {
                 addClass(div, className);
             }
-
             addTarget.appendChild(div);
-
             return div;
         }
-
         // Append a origin to the base
         function addOrigin(base, handleNumber) {
             var origin = addNodeTo(base, options.cssClasses.origin);
             var handle = addNodeTo(origin, options.cssClasses.handle);
-
             addNodeTo(handle, options.cssClasses.touchArea);
-
             handle.setAttribute("data-handle", handleNumber);
-
             if (options.keyboardSupport) {
                 // https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/tabindex
                 // 0 = focusable and reachable
                 handle.setAttribute("tabindex", "0");
-                handle.addEventListener("keydown", function(event) {
+                handle.addEventListener("keydown", function (event) {
                     return eventKeydown(event, handleNumber);
                 });
             }
-
             handle.setAttribute("role", "slider");
             handle.setAttribute("aria-orientation", options.ort ? "vertical" : "horizontal");
-
             if (handleNumber === 0) {
                 addClass(handle, options.cssClasses.handleLower);
-            } else if (handleNumber === options.handles - 1) {
+            }
+            else if (handleNumber === options.handles - 1) {
                 addClass(handle, options.cssClasses.handleUpper);
             }
-
             return origin;
         }
-
         // Insert nodes for connect elements
         function addConnect(base, add) {
             if (!add) {
                 return false;
             }
-
             return addNodeTo(base, options.cssClasses.connect);
         }
-
         // Add handles to the slider base.
         function addElements(connectOptions, base) {
             var connectBase = addNodeTo(base, options.cssClasses.connects);
-
             scope_Handles = [];
             scope_Connects = [];
-
             scope_Connects.push(addConnect(connectBase, connectOptions[0]));
-
             // [::::O====O====O====]
             // connectOptions = [0, 1, 1, 1]
-
             for (var i = 0; i < options.handles; i++) {
                 // Keep a list of all added handles.
                 scope_Handles.push(addOrigin(base, i));
@@ -2541,57 +2372,49 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 scope_Connects.push(addConnect(connectBase, connectOptions[i + 1]));
             }
         }
-
         // Initialize a single slider.
         function addSlider(addTarget) {
             // Apply classes and data to the target.
             addClass(addTarget, options.cssClasses.target);
-
             if (options.dir === 0) {
                 addClass(addTarget, options.cssClasses.ltr);
-            } else {
+            }
+            else {
                 addClass(addTarget, options.cssClasses.rtl);
             }
-
             if (options.ort === 0) {
                 addClass(addTarget, options.cssClasses.horizontal);
-            } else {
+            }
+            else {
                 addClass(addTarget, options.cssClasses.vertical);
             }
-
             var textDirection = getComputedStyle(addTarget).direction;
-
             if (textDirection === "rtl") {
                 addClass(addTarget, options.cssClasses.textDirectionRtl);
-            } else {
+            }
+            else {
                 addClass(addTarget, options.cssClasses.textDirectionLtr);
             }
-
             return addNodeTo(addTarget, options.cssClasses.base);
         }
-
         function addTooltip(handle, handleNumber) {
             if (!options.tooltips[handleNumber]) {
                 return false;
             }
-
             return addNodeTo(handle.firstChild, options.cssClasses.tooltip);
         }
-
         function isSliderDisabled() {
             return scope_Target.hasAttribute("disabled");
         }
-
         // Disable the slider dragging if any handle is disabled
         function isHandleDisabled(handleNumber) {
             var handleOrigin = scope_Handles[handleNumber];
             return handleOrigin.hasAttribute("disabled");
         }
-
         function removeTooltips() {
             if (scope_Tooltips) {
-                removeEvent("update.tooltips");
-                scope_Tooltips.forEach(function(tooltip) {
+                removeEvent("update" + INTERNAL_EVENT_NS.tooltips);
+                scope_Tooltips.forEach(function (tooltip) {
                     if (tooltip) {
                         removeElement(tooltip);
                     }
@@ -2599,48 +2422,37 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 scope_Tooltips = null;
             }
         }
-
         // The tooltips option is a shorthand for using the 'update' event.
         function tooltips() {
             removeTooltips();
-
             // Tooltips are added with options.tooltips in original order.
             scope_Tooltips = scope_Handles.map(addTooltip);
-
-            bindEvent("update.tooltips", function(values, handleNumber, unencoded) {
+            bindEvent("update" + INTERNAL_EVENT_NS.tooltips, function (values, handleNumber, unencoded) {
                 if (!scope_Tooltips[handleNumber]) {
                     return;
                 }
-
                 var formattedValue = values[handleNumber];
-
                 if (options.tooltips[handleNumber] !== true) {
                     formattedValue = options.tooltips[handleNumber].to(unencoded[handleNumber]);
                 }
-
                 scope_Tooltips[handleNumber].innerHTML = formattedValue;
             });
         }
-
         function aria() {
-            bindEvent("update", function(values, handleNumber, unencoded, tap, positions) {
+            removeEvent("update" + INTERNAL_EVENT_NS.aria);
+            bindEvent("update" + INTERNAL_EVENT_NS.aria, function (values, handleNumber, unencoded, tap, positions) {
                 // Update Aria Values for all handles, as a change in one changes min and max values for the next.
-                scope_HandleNumbers.forEach(function(index) {
+                scope_HandleNumbers.forEach(function (index) {
                     var handle = scope_Handles[index];
-
                     var min = checkHandlePosition(scope_Locations, index, 0, true, true, true);
                     var max = checkHandlePosition(scope_Locations, index, 100, true, true, true);
-
                     var now = positions[index];
-
                     // Formatted value for display
                     var text = options.ariaFormat.to(unencoded[index]);
-
                     // Map to slider range values
                     min = scope_Spectrum.fromStepping(min).toFixed(1);
                     max = scope_Spectrum.fromStepping(max).toFixed(1);
                     now = scope_Spectrum.fromStepping(now).toFixed(1);
-
                     handle.children[0].setAttribute("aria-valuemin", min);
                     handle.children[0].setAttribute("aria-valuemax", max);
                     handle.children[0].setAttribute("aria-valuenow", now);
@@ -2648,88 +2460,70 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 });
             });
         }
-
         function getGroup(mode, values, stepped) {
             // Use the range.
             if (mode === "range" || mode === "steps") {
                 return scope_Spectrum.xVal;
             }
-
             if (mode === "count") {
                 if (values < 2) {
                     throw new Error("noUiSlider (" + VERSION + "): 'values' (>= 2) required for mode 'count'.");
                 }
-
                 // Divide 0 - 100 in 'count' parts.
                 var interval = values - 1;
                 var spread = 100 / interval;
-
                 values = [];
-
                 // List these parts and have them handled as 'positions'.
                 while (interval--) {
                     values[interval] = interval * spread;
                 }
-
                 values.push(100);
-
                 mode = "positions";
             }
-
             if (mode === "positions") {
                 // Map all percentages to on-range values.
-                return values.map(function(value) {
+                return values.map(function (value) {
                     return scope_Spectrum.fromStepping(stepped ? scope_Spectrum.getStep(value) : value);
                 });
             }
-
             if (mode === "values") {
                 // If the value must be stepped, it needs to be converted to a percentage first.
                 if (stepped) {
-                    return values.map(function(value) {
+                    return values.map(function (value) {
                         // Convert to percentage, apply step, return to value.
                         return scope_Spectrum.fromStepping(scope_Spectrum.getStep(scope_Spectrum.toStepping(value)));
                     });
                 }
-
                 // Otherwise, we can simply use the values.
                 return values;
             }
         }
-
         function generateSpread(density, mode, group) {
             function safeIncrement(value, increment) {
                 // Avoid floating point variance by dropping the smallest decimal places.
                 return (value + increment).toFixed(7) / 1;
             }
-
             var indexes = {};
             var firstInRange = scope_Spectrum.xVal[0];
             var lastInRange = scope_Spectrum.xVal[scope_Spectrum.xVal.length - 1];
             var ignoreFirst = false;
             var ignoreLast = false;
             var prevPct = 0;
-
             // Create a copy of the group, sort it and filter away all duplicates.
-            group = unique(
-                group.slice().sort(function(a, b) {
-                    return a - b;
-                })
-            );
-
+            group = unique(group.slice().sort(function (a, b) {
+                return a - b;
+            }));
             // Make sure the range starts with the first element.
             if (group[0] !== firstInRange) {
                 group.unshift(firstInRange);
                 ignoreFirst = true;
             }
-
             // Likewise for the last one.
             if (group[group.length - 1] !== lastInRange) {
                 group.push(lastInRange);
                 ignoreLast = true;
             }
-
-            group.forEach(function(current, index) {
+            group.forEach(function (current, index) {
                 // Get the current step and the lower + upper positions.
                 var step;
                 var i;
@@ -2744,43 +2538,38 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 var realSteps;
                 var stepSize;
                 var isSteps = mode === "steps";
-
                 // When using 'steps' mode, use the provided steps.
                 // Otherwise, we'll step on to the next subrange.
                 if (isSteps) {
                     step = scope_Spectrum.xNumSteps[index];
                 }
-
                 // Default to a 'full' step.
                 if (!step) {
                     step = high - low;
                 }
-
-                // Low can be 0, so test for false. If high is undefined,
-                // we are at the last subrange. Index 0 is already handled.
-                if (low === false || high === undefined) {
+                // Low can be 0, so test for false. Index 0 is already handled.
+                if (low === false) {
                     return;
                 }
-
+                // If high is undefined we are at the last subrange. Make sure it iterates once (#1088)
+                if (high === undefined) {
+                    high = low;
+                }
                 // Make sure step isn't 0, which would cause an infinite loop (#654)
                 step = Math.max(step, 0.0000001);
-
                 // Find all steps in the subrange.
                 for (i = low; i <= high; i = safeIncrement(i, step)) {
                     // Get the percentage value for the current step,
                     // calculate the size for the subrange.
                     newPct = scope_Spectrum.toStepping(i);
                     pctDifference = newPct - prevPct;
-
                     steps = pctDifference / density;
                     realSteps = Math.round(steps);
-
                     // This ratio represents the amount of percentage-space a point indicates.
                     // For a density 1 the points/percentage = 1. For density 2, that percentage needs to be re-divided.
                     // Round the percentage offset to an even number, then divide by two
                     // to spread the offset on both sides of the range.
                     stepSize = pctDifference / realSteps;
-
                     // Divide all points evenly, adding the correct number to this subrange.
                     // Run up to <= so that 100% gets a point, event if ignoreLast is set.
                     for (q = 1; q <= realSteps; q += 1) {
@@ -2791,68 +2580,52 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                         pctPos = prevPct + q * stepSize;
                         indexes[pctPos.toFixed(5)] = [scope_Spectrum.fromStepping(pctPos), 0];
                     }
-
                     // Determine the point type.
                     type = group.indexOf(i) > -1 ? PIPS_LARGE_VALUE : isSteps ? PIPS_SMALL_VALUE : PIPS_NO_VALUE;
-
                     // Enforce the 'ignoreFirst' option by overwriting the type for 0.
                     if (!index && ignoreFirst && i !== high) {
                         type = 0;
                     }
-
                     if (!(i === high && ignoreLast)) {
                         // Mark the 'type' of this point. 0 = plain, 1 = real value, 2 = step value.
                         indexes[newPct.toFixed(5)] = [i, type];
                     }
-
                     // Update the percentage count.
                     prevPct = newPct;
                 }
             });
-
             return indexes;
         }
-
         function addMarking(spread, filterFunc, formatter) {
             var element = scope_Document.createElement("div");
-
             var valueSizeClasses = [];
             valueSizeClasses[PIPS_NO_VALUE] = options.cssClasses.valueNormal;
             valueSizeClasses[PIPS_LARGE_VALUE] = options.cssClasses.valueLarge;
             valueSizeClasses[PIPS_SMALL_VALUE] = options.cssClasses.valueSub;
-
             var markerSizeClasses = [];
             markerSizeClasses[PIPS_NO_VALUE] = options.cssClasses.markerNormal;
             markerSizeClasses[PIPS_LARGE_VALUE] = options.cssClasses.markerLarge;
             markerSizeClasses[PIPS_SMALL_VALUE] = options.cssClasses.markerSub;
-
             var valueOrientationClasses = [options.cssClasses.valueHorizontal, options.cssClasses.valueVertical];
             var markerOrientationClasses = [options.cssClasses.markerHorizontal, options.cssClasses.markerVertical];
-
             addClass(element, options.cssClasses.pips);
             addClass(element, options.ort === 0 ? options.cssClasses.pipsHorizontal : options.cssClasses.pipsVertical);
-
             function getClasses(type, source) {
                 var a = source === options.cssClasses.value;
                 var orientationClasses = a ? valueOrientationClasses : markerOrientationClasses;
                 var sizeClasses = a ? valueSizeClasses : markerSizeClasses;
-
                 return source + " " + orientationClasses[options.ort] + " " + sizeClasses[type];
             }
-
             function addSpread(offset, value, type) {
                 // Apply the filter function, if it is set.
                 type = filterFunc ? filterFunc(value, type) : type;
-
                 if (type === PIPS_NONE) {
                     return;
                 }
-
                 // Add a marker for every point
                 var node = addNodeTo(element, false);
                 node.className = getClasses(type, options.cssClasses.marker);
                 node.style[options.style] = offset + "%";
-
                 // Values are only appended for points marked '1' or '2'.
                 if (type > PIPS_NO_VALUE) {
                     node = addNodeTo(element, false);
@@ -2862,26 +2635,21 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     node.innerHTML = formatter.to(value);
                 }
             }
-
             // Append all points.
-            Object.keys(spread).forEach(function(offset) {
+            Object.keys(spread).forEach(function (offset) {
                 addSpread(offset, spread[offset][0], spread[offset][1]);
             });
-
             return element;
         }
-
         function removePips() {
             if (scope_Pips) {
                 removeElement(scope_Pips);
                 scope_Pips = null;
             }
         }
-
         function pips(grid) {
             // Fix #669
             removePips();
-
             var mode = grid.mode;
             var density = grid.density || 1;
             var filter = grid.filter || false;
@@ -2892,54 +2660,43 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             var format = grid.format || {
                 to: Math.round
             };
-
             scope_Pips = scope_Target.appendChild(addMarking(spread, filter, format));
-
             return scope_Pips;
         }
-
         // Shorthand for base dimensions.
         function baseSize() {
             var rect = scope_Base.getBoundingClientRect();
             var alt = "offset" + ["Width", "Height"][options.ort];
             return options.ort === 0 ? rect.width || scope_Base[alt] : rect.height || scope_Base[alt];
         }
-
         // Handler for attaching events trough a proxy.
         function attachEvent(events, element, callback, data) {
             // This function can be used to 'filter' events to the slider.
             // element is a node, not a nodeList
-
-            var method = function(e) {
+            var method = function (e) {
                 e = fixEvent(e, data.pageOffset, data.target || element);
-
                 // fixEvent returns false if this event has a different target
                 // when handling (multi-) touch events;
                 if (!e) {
                     return false;
                 }
-
                 // doNotReject is passed by all end events to make sure released touches
                 // are not rejected, leaving the slider "stuck" to the cursor;
                 if (isSliderDisabled() && !data.doNotReject) {
                     return false;
                 }
-
                 // Stop if an active 'tap' transition is taking place.
                 if (hasClass(scope_Target, options.cssClasses.tap) && !data.doNotReject) {
                     return false;
                 }
-
                 // Ignore right or middle clicks on start #454
                 if (events === actions.start && e.buttons !== undefined && e.buttons > 1) {
                     return false;
                 }
-
                 // Ignore right or middle clicks on start #454
                 if (data.hover && e.buttons) {
                     return false;
                 }
-
                 // 'supportsPassive' is only true if a browser also supports touch-action: none in CSS.
                 // iOS safari does not, so it doesn't get to benefit from passive scrolling. iOS does support
                 // touch-action: manipulation, but that allows panning, which breaks
@@ -2948,24 +2705,18 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 if (!supportsPassive) {
                     e.preventDefault();
                 }
-
                 e.calcPoint = e.points[options.ort];
-
                 // Call the event handler with the event [ and additional data ].
                 callback(e, data);
             };
-
             var methods = [];
-
             // Bind a closure on the target for every event type.
-            events.split(" ").forEach(function(eventName) {
+            events.split(" ").forEach(function (eventName) {
                 element.addEventListener(eventName, method, supportsPassive ? { passive: true } : false);
                 methods.push([eventName, method]);
             });
-
             return methods;
         }
-
         // Provide a clean event with standardized offset values.
         function fixEvent(e, pageOffset, eventTarget) {
             // Filter the event to register the type, which can be
@@ -2974,116 +2725,97 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             var touch = e.type.indexOf("touch") === 0;
             var mouse = e.type.indexOf("mouse") === 0;
             var pointer = e.type.indexOf("pointer") === 0;
-
             var x;
             var y;
-
             // IE10 implemented pointer events with a prefix;
             if (e.type.indexOf("MSPointer") === 0) {
                 pointer = true;
             }
-
+            // Erroneous events seem to be passed in occasionally on iOS/iPadOS after user finishes interacting with
+            // the slider. They appear to be of type MouseEvent, yet they don't have usual properties set. Ignore
+            // events that have no touches or buttons associated with them. (#1057, #1079, #1095)
+            if (e.type === "mousedown" && !e.buttons && !e.touches) {
+                return false;
+            }
             // The only thing one handle should be concerned about is the touches that originated on top of it.
             if (touch) {
                 // Returns true if a touch originated on the target.
-                var isTouchOnTarget = function(checkTouch) {
-                    return (
-                        checkTouch.target === eventTarget ||
+                var isTouchOnTarget = function (checkTouch) {
+                    return (checkTouch.target === eventTarget ||
                         eventTarget.contains(checkTouch.target) ||
-                        (checkTouch.target.shadowRoot && checkTouch.target.shadowRoot.contains(eventTarget))
-                    );
+                        (checkTouch.target.shadowRoot && checkTouch.target.shadowRoot.contains(eventTarget)));
                 };
-
                 // In the case of touchstart events, we need to make sure there is still no more than one
                 // touch on the target so we look amongst all touches.
                 if (e.type === "touchstart") {
                     var targetTouches = Array.prototype.filter.call(e.touches, isTouchOnTarget);
-
                     // Do not support more than one touch per handle.
                     if (targetTouches.length > 1) {
                         return false;
                     }
-
                     x = targetTouches[0].pageX;
                     y = targetTouches[0].pageY;
-                } else {
+                }
+                else {
                     // In the other cases, find on changedTouches is enough.
                     var targetTouch = Array.prototype.find.call(e.changedTouches, isTouchOnTarget);
-
                     // Cancel if the target touch has not moved.
                     if (!targetTouch) {
                         return false;
                     }
-
                     x = targetTouch.pageX;
                     y = targetTouch.pageY;
                 }
             }
-
             pageOffset = pageOffset || getPageOffset(scope_Document);
-
             if (mouse || pointer) {
                 x = e.clientX + pageOffset.x;
                 y = e.clientY + pageOffset.y;
             }
-
             e.pageOffset = pageOffset;
             e.points = [x, y];
             e.cursor = mouse || pointer; // Fix #435
-
             return e;
         }
-
         // Translate a coordinate in the document to a percentage on the slider
         function calcPointToPercentage(calcPoint) {
             var location = calcPoint - offset(scope_Base, options.ort);
             var proposal = (location * 100) / baseSize();
-
             // Clamp proposal between 0% and 100%
             // Out-of-bound coordinates may occur when .noUi-base pseudo-elements
             // are used (e.g. contained handles feature)
             proposal = limit(proposal);
-
             return options.dir ? 100 - proposal : proposal;
         }
-
         // Find handle closest to a certain percentage on the slider
         function getClosestHandle(clickedPosition) {
             var smallestDifference = 100;
             var handleNumber = false;
-
-            scope_Handles.forEach(function(handle, index) {
+            scope_Handles.forEach(function (handle, index) {
                 // Disabled handles are ignored
                 if (isHandleDisabled(index)) {
                     return;
                 }
-
                 var handlePosition = scope_Locations[index];
                 var differenceWithThisHandle = Math.abs(handlePosition - clickedPosition);
-
                 // Initial state
                 var clickAtEdge = differenceWithThisHandle === 100 && smallestDifference === 100;
-
                 // Difference with this handle is smaller than the previously checked handle
                 var isCloser = differenceWithThisHandle < smallestDifference;
                 var isCloserAfter = differenceWithThisHandle <= smallestDifference && clickedPosition > handlePosition;
-
                 if (isCloser || isCloserAfter || clickAtEdge) {
                     handleNumber = index;
                     smallestDifference = differenceWithThisHandle;
                 }
             });
-
             return handleNumber;
         }
-
         // Fire 'end' when a mouse or pen leaves the document.
         function documentLeave(event, data) {
             if (event.type === "mouseout" && event.target.nodeName === "HTML" && event.relatedTarget === null) {
                 eventEnd(event, data);
             }
         }
-
         // Handle movement on document for handle and range drag.
         function eventMove(event, data) {
             // Fix #498
@@ -3094,16 +2826,12 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             if (navigator.appVersion.indexOf("MSIE 9") === -1 && event.buttons === 0 && data.buttonsProperty !== 0) {
                 return eventEnd(event, data);
             }
-
             // Check if we are moving up or down
             var movement = (options.dir ? -1 : 1) * (event.calcPoint - data.startCalcPoint);
-
             // Convert the movement into a percentage of the slider width/height
             var proposal = (movement * 100) / data.baseSize;
-
             moveHandles(movement > 0, proposal, data.locations, data.handleNumbers);
         }
-
         // Unbind move events on document, call callbacks.
         function eventEnd(event, data) {
             // The handle is no longer active, so remove the class.
@@ -3111,56 +2839,44 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 removeClass(data.handle, options.cssClasses.active);
                 scope_ActiveHandlesCount -= 1;
             }
-
             // Unbind the move and end events, which are added on 'start'.
-            data.listeners.forEach(function(c) {
+            data.listeners.forEach(function (c) {
                 scope_DocumentElement.removeEventListener(c[0], c[1]);
             });
-
             if (scope_ActiveHandlesCount === 0) {
                 // Remove dragging class.
                 removeClass(scope_Target, options.cssClasses.drag);
                 setZindex();
-
                 // Remove cursor styles and text-selection events bound to the body.
                 if (event.cursor) {
                     scope_Body.style.cursor = "";
                     scope_Body.removeEventListener("selectstart", preventDefault);
                 }
             }
-
-            data.handleNumbers.forEach(function(handleNumber) {
+            data.handleNumbers.forEach(function (handleNumber) {
                 fireEvent("change", handleNumber);
                 fireEvent("set", handleNumber);
                 fireEvent("end", handleNumber);
             });
         }
-
         // Bind move events on document.
         function eventStart(event, data) {
             // Ignore event if any handle is disabled
             if (data.handleNumbers.some(isHandleDisabled)) {
                 return false;
             }
-
             var handle;
-
             if (data.handleNumbers.length === 1) {
                 var handleOrigin = scope_Handles[data.handleNumbers[0]];
-
                 handle = handleOrigin.children[0];
                 scope_ActiveHandlesCount += 1;
-
                 // Mark the handle as 'active' so it can be styled.
                 addClass(handle, options.cssClasses.active);
             }
-
             // A drag should never propagate up to the 'tap' event.
             event.stopPropagation();
-
             // Record the event listeners.
             var listeners = [];
-
             // Attach the move and end events.
             var moveEvent = attachEvent(actions.move, scope_DocumentElement, eventMove, {
                 // The event target has changed so we need to propagate the original one so that we keep
@@ -3175,7 +2891,6 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 buttonsProperty: event.buttons,
                 locations: scope_Locations.slice()
             });
-
             var endEvent = attachEvent(actions.end, scope_DocumentElement, eventEnd, {
                 target: event.target,
                 handle: handle,
@@ -3183,7 +2898,6 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 doNotReject: true,
                 handleNumbers: data.handleNumbers
             });
-
             var outEvent = attachEvent("mouseout", scope_DocumentElement, documentLeave, {
                 target: event.target,
                 handle: handle,
@@ -3191,22 +2905,18 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 doNotReject: true,
                 handleNumbers: data.handleNumbers
             });
-
             // We want to make sure we pushed the listeners in the listener list rather than creating
             // a new one as it has already been passed to the event handlers.
             listeners.push.apply(listeners, moveEvent.concat(endEvent, outEvent));
-
             // Text selection isn't an issue on touch devices,
             // so adding cursor styles can be skipped.
             if (event.cursor) {
                 // Prevent the 'I' cursor and extend the range-drag cursor.
                 scope_Body.style.cursor = getComputedStyle(event.target).cursor;
-
                 // Mark the target with a dragging state.
                 if (scope_Handles.length > 1) {
                     addClass(scope_Target, options.cssClasses.drag);
                 }
-
                 // Prevent text selection when dragging the handles.
                 // In noUiSlider <= 9.2.0, this was handled by calling preventDefault on mouse/touch start/move,
                 // which is scroll blocking. The selectstart event is supported by FireFox starting from version 52,
@@ -3215,150 +2925,122 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 // See: http://caniuse.com/#search=selectstart
                 scope_Body.addEventListener("selectstart", preventDefault, false);
             }
-
-            data.handleNumbers.forEach(function(handleNumber) {
+            data.handleNumbers.forEach(function (handleNumber) {
                 fireEvent("start", handleNumber);
             });
         }
-
         // Move closest handle to tapped location.
         function eventTap(event) {
             // The tap event shouldn't propagate up
             event.stopPropagation();
-
             var proposal = calcPointToPercentage(event.calcPoint);
             var handleNumber = getClosestHandle(proposal);
-
             // Tackle the case that all handles are 'disabled'.
             if (handleNumber === false) {
                 return false;
             }
-
             // Flag the slider as it is now in a transitional state.
             // Transition takes a configurable amount of ms (default 300). Re-enable the slider after that.
             if (!options.events.snap) {
                 addClassFor(scope_Target, options.cssClasses.tap, options.animationDuration);
             }
-
             setHandle(handleNumber, proposal, true, true);
-
             setZindex();
-
             fireEvent("slide", handleNumber, true);
             fireEvent("update", handleNumber, true);
             fireEvent("change", handleNumber, true);
             fireEvent("set", handleNumber, true);
-
             if (options.events.snap) {
                 eventStart(event, { handleNumbers: [handleNumber] });
             }
         }
-
         // Fires a 'hover' event for a hovered mouse/pen position.
         function eventHover(event) {
             var proposal = calcPointToPercentage(event.calcPoint);
-
             var to = scope_Spectrum.getStep(proposal);
             var value = scope_Spectrum.fromStepping(to);
-
-            Object.keys(scope_Events).forEach(function(targetEvent) {
+            Object.keys(scope_Events).forEach(function (targetEvent) {
                 if ("hover" === targetEvent.split(".")[0]) {
-                    scope_Events[targetEvent].forEach(function(callback) {
+                    scope_Events[targetEvent].forEach(function (callback) {
                         callback.call(scope_Self, value);
                     });
                 }
             });
         }
-
         // Handles keydown on focused handles
         // Don't move the document when pressing arrow keys on focused handles
         function eventKeydown(event, handleNumber) {
             if (isSliderDisabled() || isHandleDisabled(handleNumber)) {
                 return false;
             }
-
             var horizontalKeys = ["Left", "Right"];
             var verticalKeys = ["Down", "Up"];
             var largeStepKeys = ["PageDown", "PageUp"];
             var edgeKeys = ["Home", "End"];
-
             if (options.dir && !options.ort) {
                 // On an right-to-left slider, the left and right keys act inverted
                 horizontalKeys.reverse();
-            } else if (options.ort && !options.dir) {
+            }
+            else if (options.ort && !options.dir) {
                 // On a top-to-bottom slider, the up and down keys act inverted
                 verticalKeys.reverse();
                 largeStepKeys.reverse();
             }
-
             // Strip "Arrow" for IE compatibility. https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key
             var key = event.key.replace("Arrow", "");
-
             var isLargeDown = key === largeStepKeys[0];
             var isLargeUp = key === largeStepKeys[1];
             var isDown = key === verticalKeys[0] || key === horizontalKeys[0] || isLargeDown;
             var isUp = key === verticalKeys[1] || key === horizontalKeys[1] || isLargeUp;
             var isMin = key === edgeKeys[0];
             var isMax = key === edgeKeys[1];
-
             if (!isDown && !isUp && !isMin && !isMax) {
                 return true;
             }
-
             event.preventDefault();
-
             var to;
-
             if (isUp || isDown) {
-                var multiplier = 5;
+                var multiplier = options.keyboardPageMultiplier;
                 var direction = isDown ? 0 : 1;
                 var steps = getNextStepsForHandle(handleNumber);
                 var step = steps[direction];
-
                 // At the edge of a slider, do nothing
                 if (step === null) {
                     return false;
                 }
-
                 // No step set, use the default of 10% of the sub-range
                 if (step === false) {
-                    step = scope_Spectrum.getDefaultStep(scope_Locations[handleNumber], isDown, 10);
+                    step = scope_Spectrum.getDefaultStep(scope_Locations[handleNumber], isDown, options.keyboardDefaultStep);
                 }
-
                 if (isLargeUp || isLargeDown) {
                     step *= multiplier;
                 }
-
                 // Step over zero-length ranges (#948);
                 step = Math.max(step, 0.0000001);
-
                 // Decrement for down steps
                 step = (isDown ? -1 : 1) * step;
-
                 to = scope_Values[handleNumber] + step;
-            } else if (isMax) {
+            }
+            else if (isMax) {
                 // End key
                 to = options.spectrum.xVal[options.spectrum.xVal.length - 1];
-            } else {
+            }
+            else {
                 // Home key
                 to = options.spectrum.xVal[0];
             }
-
             setHandle(handleNumber, scope_Spectrum.toStepping(to), true, true);
-
             fireEvent("slide", handleNumber);
             fireEvent("update", handleNumber);
             fireEvent("change", handleNumber);
             fireEvent("set", handleNumber);
-
             return false;
         }
-
         // Attach events to several slider parts.
         function bindSliderEvents(behaviour) {
             // Attach the standard drag event to the handles.
             if (!behaviour.fixed) {
-                scope_Handles.forEach(function(handle, index) {
+                scope_Handles.forEach(function (handle, index) {
                     // These events are only bound to the visual handle
                     // element, not the 'real' origin element.
                     attachEvent(actions.start, handle.children[0], eventStart, {
@@ -3366,32 +3048,26 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     });
                 });
             }
-
             // Attach the tap event to the slider base.
             if (behaviour.tap) {
                 attachEvent(actions.start, scope_Base, eventTap, {});
             }
-
             // Fire hover events
             if (behaviour.hover) {
                 attachEvent(actions.move, scope_Base, eventHover, {
                     hover: true
                 });
             }
-
             // Make the range draggable.
             if (behaviour.drag) {
-                scope_Connects.forEach(function(connect, index) {
+                scope_Connects.forEach(function (connect, index) {
                     if (connect === false || index === 0 || index === scope_Connects.length - 1) {
                         return;
                     }
-
                     var handleBefore = scope_Handles[index - 1];
                     var handleAfter = scope_Handles[index];
                     var eventHolders = [connect];
-
                     addClass(connect, options.cssClasses.draggable);
-
                     // When the range is fixed, the entire range can
                     // be dragged by the handles. The handle in the first
                     // origin will propagate the start event upward,
@@ -3400,8 +3076,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                         eventHolders.push(handleBefore.children[0]);
                         eventHolders.push(handleAfter.children[0]);
                     }
-
-                    eventHolders.forEach(function(eventHolder) {
+                    eventHolders.forEach(function (eventHolder) {
                         attachEvent(actions.start, eventHolder, eventStart, {
                             handles: [handleBefore, handleAfter],
                             handleNumbers: [index - 1, index]
@@ -3410,67 +3085,63 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 });
             }
         }
-
         // Attach an event to this slider, possibly including a namespace
         function bindEvent(namespacedEvent, callback) {
             scope_Events[namespacedEvent] = scope_Events[namespacedEvent] || [];
             scope_Events[namespacedEvent].push(callback);
-
             // If the event bound is 'update,' fire it immediately for all handles.
             if (namespacedEvent.split(".")[0] === "update") {
-                scope_Handles.forEach(function(a, index) {
+                scope_Handles.forEach(function (a, index) {
                     fireEvent("update", index);
                 });
             }
         }
-
+        function isInternalNamespace(namespace) {
+            return namespace === INTERNAL_EVENT_NS.aria || namespace === INTERNAL_EVENT_NS.tooltips;
+        }
         // Undo attachment of event
         function removeEvent(namespacedEvent) {
             var event = namespacedEvent && namespacedEvent.split(".")[0];
-            var namespace = event && namespacedEvent.substring(event.length);
-
-            Object.keys(scope_Events).forEach(function(bind) {
+            var namespace = event ? namespacedEvent.substring(event.length) : namespacedEvent;
+            Object.keys(scope_Events).forEach(function (bind) {
                 var tEvent = bind.split(".")[0];
                 var tNamespace = bind.substring(tEvent.length);
-
                 if ((!event || event === tEvent) && (!namespace || namespace === tNamespace)) {
-                    delete scope_Events[bind];
+                    // only delete protected internal event if intentional
+                    if (!isInternalNamespace(tNamespace) || namespace === tNamespace) {
+                        delete scope_Events[bind];
+                    }
                 }
             });
         }
-
         // External event handling
         function fireEvent(eventName, handleNumber, tap) {
-            Object.keys(scope_Events).forEach(function(targetEvent) {
+            Object.keys(scope_Events).forEach(function (targetEvent) {
                 var eventType = targetEvent.split(".")[0];
-
                 if (eventName === eventType) {
-                    scope_Events[targetEvent].forEach(function(callback) {
+                    scope_Events[targetEvent].forEach(function (callback) {
                         callback.call(
-                            // Use the slider public API as the scope ('this')
-                            scope_Self,
-                            // Return values as array, so arg_1[arg_2] is always valid.
-                            scope_Values.map(options.format.to),
-                            // Handle index, 0 or 1
-                            handleNumber,
-                            // Un-formatted slider values
-                            scope_Values.slice(),
-                            // Event is fired by tap, true or false
-                            tap || false,
-                            // Left offset of the handle, in relation to the slider
-                            scope_Locations.slice(),
-                            // add the slider public API to an accessible parameter when this is unavailable
-                            scope_Self
-                        );
+                        // Use the slider public API as the scope ('this')
+                        scope_Self, 
+                        // Return values as array, so arg_1[arg_2] is always valid.
+                        scope_Values.map(options.format.to), 
+                        // Handle index, 0 or 1
+                        handleNumber, 
+                        // Un-formatted slider values
+                        scope_Values.slice(), 
+                        // Event is fired by tap, true or false
+                        tap || false, 
+                        // Left offset of the handle, in relation to the slider
+                        scope_Locations.slice(), 
+                        // add the slider public API to an accessible parameter when this is unavailable
+                        scope_Self);
                     });
                 }
             });
         }
-
         // Split out the handle positioning logic so the Move event can use it, too
         function checkHandlePosition(reference, handleNumber, to, lookBackward, lookForward, getValue) {
             var distance;
-
             // For sliders with multiple handles, limit movement to the other handle.
             // Apply the margin option by adding it to the handle positions.
             if (scope_Handles.length > 1 && !options.events.unconstrained) {
@@ -3478,13 +3149,11 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     distance = scope_Spectrum.getAbsoluteDistance(reference[handleNumber - 1], options.margin, 0);
                     to = Math.max(to, distance);
                 }
-
                 if (lookForward && handleNumber < scope_Handles.length - 1) {
                     distance = scope_Spectrum.getAbsoluteDistance(reference[handleNumber + 1], options.margin, 1);
                     to = Math.min(to, distance);
                 }
             }
-
             // The limit option has the opposite effect, limiting handles to a
             // maximum distance from another. Limit must be > 0, as otherwise
             // handles would be unmovable.
@@ -3493,13 +3162,11 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     distance = scope_Spectrum.getAbsoluteDistance(reference[handleNumber - 1], options.limit, 0);
                     to = Math.min(to, distance);
                 }
-
                 if (lookForward && handleNumber < scope_Handles.length - 1) {
                     distance = scope_Spectrum.getAbsoluteDistance(reference[handleNumber + 1], options.limit, 1);
                     to = Math.max(to, distance);
                 }
             }
-
             // The padding option keeps the handles a certain distance from the
             // edges of the slider. Padding must be > 0.
             if (options.padding) {
@@ -3507,92 +3174,69 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     distance = scope_Spectrum.getAbsoluteDistance(0, options.padding[0], 0);
                     to = Math.max(to, distance);
                 }
-
                 if (handleNumber === scope_Handles.length - 1) {
                     distance = scope_Spectrum.getAbsoluteDistance(100, options.padding[1], 1);
                     to = Math.min(to, distance);
                 }
             }
-
             to = scope_Spectrum.getStep(to);
-
             // Limit percentage to the 0 - 100 range
             to = limit(to);
-
             // Return false if handle can't move
             if (to === reference[handleNumber] && !getValue) {
                 return false;
             }
-
             return to;
         }
-
         // Uses slider orientation to create CSS rules. a = base value;
         function inRuleOrder(v, a) {
             var o = options.ort;
             return (o ? a : v) + ", " + (o ? v : a);
         }
-
         // Moves handle(s) by a percentage
         // (bool, % to move, [% where handle started, ...], [index in scope_Handles, ...])
         function moveHandles(upward, proposal, locations, handleNumbers) {
             var proposals = locations.slice();
-
             var b = [!upward, upward];
             var f = [upward, !upward];
-
             // Copy handleNumbers so we don't change the dataset
             handleNumbers = handleNumbers.slice();
-
             // Check to see which handle is 'leading'.
             // If that one can't move the second can't either.
             if (upward) {
                 handleNumbers.reverse();
             }
-
             // Step 1: get the maximum percentage that any of the handles can move
             if (handleNumbers.length > 1) {
-                handleNumbers.forEach(function(handleNumber, o) {
-                    var to = checkHandlePosition(
-                        proposals,
-                        handleNumber,
-                        proposals[handleNumber] + proposal,
-                        b[o],
-                        f[o],
-                        false
-                    );
-
+                handleNumbers.forEach(function (handleNumber, o) {
+                    var to = checkHandlePosition(proposals, handleNumber, proposals[handleNumber] + proposal, b[o], f[o], false);
                     // Stop if one of the handles can't move.
                     if (to === false) {
                         proposal = 0;
-                    } else {
+                    }
+                    else {
                         proposal = to - proposals[handleNumber];
                         proposals[handleNumber] = to;
                     }
                 });
             }
-
             // If using one handle, check backward AND forward
             else {
                 b = f = [true];
             }
-
             var state = false;
-
             // Step 2: Try to set the handles with the found percentage
-            handleNumbers.forEach(function(handleNumber, o) {
+            handleNumbers.forEach(function (handleNumber, o) {
                 state = setHandle(handleNumber, locations[handleNumber] + proposal, b[o], f[o]) || state;
             });
-
             // Step 3: If a handle moved, fire events
             if (state) {
-                handleNumbers.forEach(function(handleNumber) {
+                handleNumbers.forEach(function (handleNumber) {
                     fireEvent("update", handleNumber);
                     fireEvent("slide", handleNumber);
                 });
             }
         }
-
         // Takes a base value and an offset. This offset is used for the connect bar size.
         // In the initial design for this feature, the origin element was 1% wide.
         // Unfortunately, a rounding bug in Chrome makes it impossible to implement this feature
@@ -3600,66 +3244,54 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
         function transformDirection(a, b) {
             return options.dir ? 100 - a - b : a;
         }
-
         // Updates scope_Locations and scope_Values, updates visual state
         function updateHandlePosition(handleNumber, to) {
             // Update locations.
             scope_Locations[handleNumber] = to;
-
             // Convert the value to the slider stepping/range.
             scope_Values[handleNumber] = scope_Spectrum.fromStepping(to);
-
             var translation = 10 * (transformDirection(to, 0) - scope_DirOffset);
             var translateRule = "translate(" + inRuleOrder(translation + "%", "0") + ")";
-
             scope_Handles[handleNumber].style[options.transformRule] = translateRule;
-
             updateConnect(handleNumber);
             updateConnect(handleNumber + 1);
         }
-
         // Handles before the slider middle are stacked later = higher,
         // Handles after the middle later is lower
         // [[7] [8] .......... | .......... [5] [4]
         function setZindex() {
-            scope_HandleNumbers.forEach(function(handleNumber) {
+            scope_HandleNumbers.forEach(function (handleNumber) {
                 var dir = scope_Locations[handleNumber] > 50 ? -1 : 1;
                 var zIndex = 3 + (scope_Handles.length + dir * handleNumber);
                 scope_Handles[handleNumber].style.zIndex = zIndex;
             });
         }
-
         // Test suggested values and apply margin, step.
-        function setHandle(handleNumber, to, lookBackward, lookForward) {
-            to = checkHandlePosition(scope_Locations, handleNumber, to, lookBackward, lookForward, false);
-
+        // if exactInput is true, don't run checkHandlePosition, then the handle can be placed in between steps (#436)
+        function setHandle(handleNumber, to, lookBackward, lookForward, exactInput) {
+            if (!exactInput) {
+                to = checkHandlePosition(scope_Locations, handleNumber, to, lookBackward, lookForward, false);
+            }
             if (to === false) {
                 return false;
             }
-
             updateHandlePosition(handleNumber, to);
-
             return true;
         }
-
         // Updates style attribute for connect nodes
         function updateConnect(index) {
             // Skip connects set to false
             if (!scope_Connects[index]) {
                 return;
             }
-
             var l = 0;
             var h = 100;
-
             if (index !== 0) {
                 l = scope_Locations[index - 1];
             }
-
             if (index !== scope_Connects.length - 1) {
                 h = scope_Locations[index];
             }
-
             // We use two rules:
             // 'translate' to change the left/top offset;
             // 'scale' to change the width of the element;
@@ -3667,10 +3299,8 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             var connectWidth = h - l;
             var translateRule = "translate(" + inRuleOrder(transformDirection(l, connectWidth) + "%", "0") + ")";
             var scaleRule = "scale(" + inRuleOrder(connectWidth / 100, "1") + ")";
-
             scope_Connects[index].style[options.transformRule] = translateRule + " " + scaleRule;
         }
-
         // Parses value passed to .set method. Returns current value if not parse-able.
         function resolveToValue(to, handleNumber) {
             // Setting with null indicates an 'ignore'.
@@ -3678,123 +3308,100 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             if (to === null || to === false || to === undefined) {
                 return scope_Locations[handleNumber];
             }
-
             // If a formatted number was passed, attempt to decode it.
             if (typeof to === "number") {
                 to = String(to);
             }
-
             to = options.format.from(to);
             to = scope_Spectrum.toStepping(to);
-
             // If parsing the number failed, use the current value.
             if (to === false || isNaN(to)) {
                 return scope_Locations[handleNumber];
             }
-
             return to;
         }
-
         // Set the slider value.
-        function valueSet(input, fireSetEvent) {
+        function valueSet(input, fireSetEvent, exactInput) {
             var values = asArray(input);
             var isInit = scope_Locations[0] === undefined;
-
             // Event fires by default
             fireSetEvent = fireSetEvent === undefined ? true : !!fireSetEvent;
-
             // Animation is optional.
             // Make sure the initial values were set before using animated placement.
             if (options.animate && !isInit) {
                 addClassFor(scope_Target, options.cssClasses.tap, options.animationDuration);
             }
-
             // First pass, without lookAhead but with lookBackward. Values are set from left to right.
-            scope_HandleNumbers.forEach(function(handleNumber) {
-                setHandle(handleNumber, resolveToValue(values[handleNumber], handleNumber), true, false);
+            scope_HandleNumbers.forEach(function (handleNumber) {
+                setHandle(handleNumber, resolveToValue(values[handleNumber], handleNumber), true, false, exactInput);
             });
-
             var i = scope_HandleNumbers.length === 1 ? 0 : 1;
-
             // Secondary passes. Now that all base values are set, apply constraints.
             // Iterate all handles to ensure constraints are applied for the entire slider (Issue #1009)
             for (; i < scope_HandleNumbers.length; ++i) {
-                scope_HandleNumbers.forEach(function(handleNumber) {
-                    setHandle(handleNumber, scope_Locations[handleNumber], true, true);
+                scope_HandleNumbers.forEach(function (handleNumber) {
+                    setHandle(handleNumber, scope_Locations[handleNumber], true, true, exactInput);
                 });
             }
-
             setZindex();
-
-            scope_HandleNumbers.forEach(function(handleNumber) {
+            scope_HandleNumbers.forEach(function (handleNumber) {
                 fireEvent("update", handleNumber);
-
                 // Fire the event only for handles that received a new value, as per #579
                 if (values[handleNumber] !== null && fireSetEvent) {
                     fireEvent("set", handleNumber);
                 }
             });
         }
-
         // Reset slider to initial values
         function valueReset(fireSetEvent) {
             valueSet(options.start, fireSetEvent);
         }
-
         // Set value for a single handle
-        function valueSetHandle(handleNumber, value, fireSetEvent) {
+        function valueSetHandle(handleNumber, value, fireSetEvent, exactInput) {
             // Ensure numeric input
             handleNumber = Number(handleNumber);
-
             if (!(handleNumber >= 0 && handleNumber < scope_HandleNumbers.length)) {
                 throw new Error("noUiSlider (" + VERSION + "): invalid handle number, got: " + handleNumber);
             }
-
             // Look both backward and forward, since we don't want this handle to "push" other handles (#960);
-            setHandle(handleNumber, resolveToValue(value, handleNumber), true, true);
-
+            // The exactInput argument can be used to ignore slider stepping (#436)
+            setHandle(handleNumber, resolveToValue(value, handleNumber), true, true, exactInput);
             fireEvent("update", handleNumber);
-
             if (fireSetEvent) {
                 fireEvent("set", handleNumber);
             }
         }
-
         // Get the slider value.
         function valueGet() {
             var values = scope_Values.map(options.format.to);
-
             // If only one handle is used, return a single value.
             if (values.length === 1) {
                 return values[0];
             }
-
             return values;
         }
-
         // Removes classes from the root and empties it.
         function destroy() {
+            // remove protected internal listeners
+            removeEvent(INTERNAL_EVENT_NS.aria);
+            removeEvent(INTERNAL_EVENT_NS.tooltips);
             for (var key in options.cssClasses) {
                 if (!options.cssClasses.hasOwnProperty(key)) {
                     continue;
                 }
                 removeClass(scope_Target, options.cssClasses[key]);
             }
-
             while (scope_Target.firstChild) {
                 scope_Target.removeChild(scope_Target.firstChild);
             }
-
             delete scope_Target.noUiSlider;
         }
-
         function getNextStepsForHandle(handleNumber) {
             var location = scope_Locations[handleNumber];
             var nearbySteps = scope_Spectrum.getNearbySteps(location);
             var value = scope_Values[handleNumber];
             var increment = nearbySteps.thisStep.step;
             var decrement = null;
-
             // If snapped, directly use defined step value
             if (options.snap) {
                 return [
@@ -3802,7 +3409,6 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     nearbySteps.stepAfter.startValue - value || null
                 ];
             }
-
             // If the next value in this step moves into the next step,
             // the increment is the start of the next step - the current value
             if (increment !== false) {
@@ -3810,53 +3416,45 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                     increment = nearbySteps.stepAfter.startValue - value;
                 }
             }
-
             // If the value is beyond the starting point
             if (value > nearbySteps.thisStep.startValue) {
                 decrement = nearbySteps.thisStep.step;
-            } else if (nearbySteps.stepBefore.step === false) {
+            }
+            else if (nearbySteps.stepBefore.step === false) {
                 decrement = false;
             }
-
             // If a handle is at the start of a step, it always steps back into the previous step first
             else {
                 decrement = value - nearbySteps.stepBefore.highestStep;
             }
-
             // Now, if at the slider edges, there is no in/decrement
             if (location === 100) {
                 increment = null;
-            } else if (location === 0) {
+            }
+            else if (location === 0) {
                 decrement = null;
             }
-
             // As per #391, the comparison for the decrement step can have some rounding issues.
             var stepDecimals = scope_Spectrum.countStepDecimals();
-
             // Round per #391
             if (increment !== null && increment !== false) {
                 increment = Number(increment.toFixed(stepDecimals));
             }
-
             if (decrement !== null && decrement !== false) {
                 decrement = Number(decrement.toFixed(stepDecimals));
             }
-
             return [decrement, increment];
         }
-
         // Get the current step size for the slider.
         function getNextSteps() {
             return scope_HandleNumbers.map(getNextStepsForHandle);
         }
-
         // Updateable: margin, limit, padding, step, range, animate, snap
         function updateOptions(optionsToUpdate, fireSetEvent) {
             // Spectrum is created using the range, snap, direction and step options.
             // 'snap' and 'step' can be updated.
             // If 'snap' and 'step' are not passed, they should remain unchanged.
             var v = valueGet();
-
             var updateAble = [
                 "margin",
                 "limit",
@@ -3869,77 +3467,62 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
                 "pips",
                 "tooltips"
             ];
-
             // Only change options that we're actually passed to update.
-            updateAble.forEach(function(name) {
+            updateAble.forEach(function (name) {
                 // Check for undefined. null removes the value.
                 if (optionsToUpdate[name] !== undefined) {
                     originalOptions[name] = optionsToUpdate[name];
                 }
             });
-
             var newOptions = testOptions(originalOptions);
-
             // Load new options into the slider state
-            updateAble.forEach(function(name) {
+            updateAble.forEach(function (name) {
                 if (optionsToUpdate[name] !== undefined) {
                     options[name] = newOptions[name];
                 }
             });
-
             scope_Spectrum = newOptions.spectrum;
-
             // Limit, margin and padding depend on the spectrum but are stored outside of it. (#677)
             options.margin = newOptions.margin;
             options.limit = newOptions.limit;
             options.padding = newOptions.padding;
-
             // Update pips, removes existing.
             if (options.pips) {
                 pips(options.pips);
-            } else {
+            }
+            else {
                 removePips();
             }
-
             // Update tooltips, removes existing.
             if (options.tooltips) {
                 tooltips();
-            } else {
+            }
+            else {
                 removeTooltips();
             }
-
             // Invalidate the current positioning so valueSet forces an update.
             scope_Locations = [];
-            valueSet(optionsToUpdate.start || v, fireSetEvent);
+            valueSet(isSet(optionsToUpdate.start) ? optionsToUpdate.start : v, fireSetEvent);
         }
-
         // Initialization steps
         function setupSlider() {
             // Create the base element, initialize HTML and set classes.
             // Add handles and connect elements.
             scope_Base = addSlider(scope_Target);
-
             addElements(options.connect, scope_Base);
-
             // Attach user events.
             bindSliderEvents(options.events);
-
             // Use the public value method to set the start values.
             valueSet(options.start);
-
             if (options.pips) {
                 pips(options.pips);
             }
-
             if (options.tooltips) {
                 tooltips();
             }
-
             aria();
         }
-
         setupSlider();
-
         // noinspection JSUnusedGlobalSymbols
         scope_Self = {
             destroy: destroy,
@@ -3951,46 +3534,39 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
             setHandle: valueSetHandle,
             reset: valueReset,
             // Exposed for unit testing, don't use this in your application.
-            __moveHandles: function(a, b, c) {
+            __moveHandles: function (a, b, c) {
                 moveHandles(a, b, scope_Locations, c);
             },
-            options: originalOptions, // Issue #600, #678
+            options: originalOptions,
             updateOptions: updateOptions,
-            target: scope_Target, // Issue #597
+            target: scope_Target,
             removePips: removePips,
             removeTooltips: removeTooltips,
-            getTooltips: function() {
+            getTooltips: function () {
                 return scope_Tooltips;
             },
-            getOrigins: function() {
+            getOrigins: function () {
                 return scope_Handles;
             },
             pips: pips // Issue #594
         };
-
         return scope_Self;
     }
-
     // Run the standard initializer
     function initialize(target, originalOptions) {
         if (!target || !target.nodeName) {
             throw new Error("noUiSlider (" + VERSION + "): create requires a single element, got: " + target);
         }
-
         // Throw an error if the slider was already initialized.
         if (target.noUiSlider) {
             throw new Error("noUiSlider (" + VERSION + "): Slider was already initialized.");
         }
-
         // Test the options and create the slider environment;
-        var options = testOptions(originalOptions, target);
+        var options = testOptions(originalOptions);
         var api = scope(target, options, originalOptions);
-
         target.noUiSlider = api;
-
         return api;
     }
-
     // Use an object instead of a function for future expandability;
     return {
         // Exposed for unit testing, don't use this in your application.
@@ -4531,7 +4107,7 @@ var ListComponent = /** @class */ (function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = (".table-wrapper .table tbody tr td, .table-wrapper ng2-smart-table table tbody tr td, ng2-smart-table .table-wrapper table tbody tr td, .table-wrapper .table thead tr td, .table-wrapper ng2-smart-table table thead tr td, ng2-smart-table .table-wrapper table thead tr td {\n  color: black;\n  font-size: 13px;\n  letter-spacing: 2.3px;\n}\n.table-wrapper .table tbody tr td .profile-pic, .table-wrapper ng2-smart-table table tbody tr td .profile-pic, ng2-smart-table .table-wrapper table tbody tr td .profile-pic, .table-wrapper .table thead tr td .profile-pic, .table-wrapper ng2-smart-table table thead tr td .profile-pic, ng2-smart-table .table-wrapper table thead tr td .profile-pic {\n  border-radius: 50%;\n  height: auto;\n  width: 30px;\n}\n.table-wrapper {\n  overflow-y: hidden;\n}\n.table-wrapper .table th, .table-wrapper ng2-smart-table table th, ng2-smart-table .table-wrapper table th {\n  padding: 15px;\n  padding-left: 6px;\n}\n.table-wrapper .table thead tr th, .table-wrapper ng2-smart-table table thead tr th, ng2-smart-table .table-wrapper table thead tr th {\n  color: black;\n  font-size: 14px;\n  font-weight: bold;\n  letter-spacing: 1.3px;\n  text-transform: uppercase;\n}\n.table-wrapper .table tbody tr, .table-wrapper ng2-smart-table table tbody tr, ng2-smart-table .table-wrapper table tbody tr {\n  height: auto;\n  cursor: pointer;\n  transition: background-color 1s;\n}\n.table-wrapper .table tbody tr:hover, .table-wrapper ng2-smart-table table tbody tr:hover, ng2-smart-table .table-wrapper table tbody tr:hover {\n  background-color: #dbdbdb !important;\n}\n.table-wrapper .table tbody tr td, .table-wrapper ng2-smart-table table tbody tr td, ng2-smart-table .table-wrapper table tbody tr td {\n  border-bottom: none;\n}\n.table-wrapper .table.table-stripes thead tr th, .table-wrapper ng2-smart-table table.table thead tr th, ng2-smart-table .table-wrapper table.table thead tr th, .table-wrapper ng2-smart-table table.table-stripes thead tr th, .table-wrapper ng2-smart-table table thead tr th, ng2-smart-table .table-wrapper table.table-stripes thead tr th, ng2-smart-table .table-wrapper table thead tr th {\n  border-bottom: none;\n}\n.table-wrapper .table.table-stripes tbody tr:nth-child(odd), .table-wrapper ng2-smart-table table tbody tr:nth-child(odd), ng2-smart-table .table-wrapper table tbody tr:nth-child(odd) {\n  background-color: #e8e8e8;\n}\n.table-wrapper .table.table-stripes tbody tr td, .table-wrapper ng2-smart-table table.table tbody tr td, ng2-smart-table .table-wrapper table.table tbody tr td, .table-wrapper ng2-smart-table table.table-stripes tbody tr td, .table-wrapper ng2-smart-table table tbody tr td, ng2-smart-table .table-wrapper table.table-stripes tbody tr td, ng2-smart-table .table-wrapper table tbody tr td {\n  border-top: none;\n}\n.table-wrapper .table.table-lines thead tr th, .table-wrapper ng2-smart-table table.table-lines thead tr th, ng2-smart-table .table-wrapper table.table-lines thead tr th {\n  border-bottom: none;\n}\n/*! nouislider - 11.0.3 - 2018-01-21 14:04:07 */\n/* Functional styling;\n * These styles are required for noUiSlider to function.\n * You don't need to change these rules to apply your design.\n */\n.noUi-target,\n.noUi-target * {\n  -webkit-touch-callout: none;\n  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n  -webkit-user-select: none;\n  touch-action: none;\n  -moz-user-select: none;\n  user-select: none;\n  box-sizing: border-box;\n}\n.noUi-target {\n  position: relative;\n  direction: ltr;\n}\n.noUi-base,\n.noUi-connects {\n  width: 100%;\n  height: 100%;\n  position: relative;\n  z-index: 1;\n}\n/* Wrapper for all connect elements.\n */\n.noUi-connects {\n  overflow: hidden;\n  z-index: 0;\n}\n.noUi-connect,\n.noUi-origin {\n  will-change: transform;\n  position: absolute;\n  z-index: 1;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 100%;\n  transform-origin: 0 0;\n}\n/* Offset direction\n */\nhtml:not([dir=rtl]) .noUi-horizontal .noUi-origin {\n  left: auto;\n  right: 0;\n}\n/* Give origins 0 height/width so they don't interfere with clicking the\n * connect elements.\n */\n.noUi-vertical .noUi-origin {\n  width: 0;\n}\n.noUi-horizontal .noUi-origin {\n  height: 0;\n}\n.noUi-handle {\n  position: absolute;\n}\n.noUi-state-tap .noUi-connect,\n.noUi-state-tap .noUi-origin {\n  transition: transform 0.3s;\n}\n.noUi-state-drag * {\n  cursor: inherit !important;\n}\n/* Slider size and handle placement;\n */\n.noUi-horizontal {\n  height: 18px;\n}\n.noUi-horizontal .noUi-handle {\n  width: 34px;\n  height: 28px;\n  left: -17px;\n  top: -6px;\n}\n.noUi-vertical {\n  width: 18px;\n}\n.noUi-vertical .noUi-handle {\n  width: 28px;\n  height: 34px;\n  left: -6px;\n  top: -17px;\n}\nhtml:not([dir=rtl]) .noUi-horizontal .noUi-handle {\n  right: -17px;\n  left: auto;\n}\n/* Styling;\n * Giving the connect element a border radius causes issues with using transform: scale\n */\n.noUi-target {\n  background: #FAFAFA;\n  border-radius: 4px;\n  border: 1px solid #D3D3D3;\n  box-shadow: inset 0 1px 1px #F0F0F0, 0 3px 6px -5px #BBB;\n}\n.noUi-connects {\n  border-radius: 3px;\n}\n.noUi-connect {\n  background: #3FB8AF;\n}\n/* Handles and cursors;\n */\n.noUi-draggable {\n  cursor: ew-resize;\n}\n.noUi-vertical .noUi-draggable {\n  cursor: ns-resize;\n}\n.noUi-handle {\n  border: 1px solid #D9D9D9;\n  border-radius: 3px;\n  background: #FFF;\n  cursor: default;\n  box-shadow: inset 0 0 1px #FFF, inset 0 1px 7px #EBEBEB, 0 3px 6px -3px #BBB;\n}\n.noUi-active {\n  box-shadow: inset 0 0 1px #FFF, inset 0 1px 7px #DDD, 0 3px 6px -3px #BBB;\n}\n/* Handle stripes;\n */\n.noUi-handle:before,\n.noUi-handle:after {\n  content: \"\";\n  display: block;\n  position: absolute;\n  height: 14px;\n  width: 1px;\n  background: #E8E7E6;\n  left: 14px;\n  top: 6px;\n}\n.noUi-handle:after {\n  left: 17px;\n}\n.noUi-vertical .noUi-handle:before,\n.noUi-vertical .noUi-handle:after {\n  width: 14px;\n  height: 1px;\n  left: 6px;\n  top: 14px;\n}\n.noUi-vertical .noUi-handle:after {\n  top: 17px;\n}\n/* Disabled state;\n */\n[disabled] .noUi-connect {\n  background: #B8B8B8;\n}\n[disabled].noUi-target,\n[disabled].noUi-handle,\n[disabled] .noUi-handle {\n  cursor: not-allowed;\n}\n/* Base;\n *\n */\n.noUi-pips,\n.noUi-pips * {\n  box-sizing: border-box;\n}\n.noUi-pips {\n  position: absolute;\n  color: #999;\n}\n/* Values;\n *\n */\n.noUi-value {\n  position: absolute;\n  white-space: nowrap;\n  text-align: center;\n}\n.noUi-value-sub {\n  color: #ccc;\n  font-size: 10px;\n}\n/* Markings;\n *\n */\n.noUi-marker {\n  position: absolute;\n  background: #CCC;\n}\n.noUi-marker-sub {\n  background: #AAA;\n}\n.noUi-marker-large {\n  background: #AAA;\n}\n/* Horizontal layout;\n *\n */\n.noUi-pips-horizontal {\n  padding: 10px 0;\n  height: 80px;\n  top: 100%;\n  left: 0;\n  width: 100%;\n}\n.noUi-value-horizontal {\n  transform: translate(-50%, 50%);\n}\n.noUi-rtl .noUi-value-horizontal {\n  transform: translate(50%, 50%);\n}\n.noUi-marker-horizontal.noUi-marker {\n  margin-left: -1px;\n  width: 2px;\n  height: 5px;\n}\n.noUi-marker-horizontal.noUi-marker-sub {\n  height: 10px;\n}\n.noUi-marker-horizontal.noUi-marker-large {\n  height: 15px;\n}\n/* Vertical layout;\n *\n */\n.noUi-pips-vertical {\n  padding: 0 10px;\n  height: 100%;\n  top: 0;\n  left: 100%;\n}\n.noUi-value-vertical {\n  transform: translate(0, -50%, 0);\n  padding-left: 25px;\n}\n.noUi-rtl .noUi-value-vertical {\n  transform: translate(0, 50%);\n}\n.noUi-marker-vertical.noUi-marker {\n  width: 5px;\n  height: 2px;\n  margin-top: -1px;\n}\n.noUi-marker-vertical.noUi-marker-sub {\n  width: 10px;\n}\n.noUi-marker-vertical.noUi-marker-large {\n  width: 15px;\n}\n.noUi-tooltip {\n  display: block;\n  position: absolute;\n  border: 1px solid #D9D9D9;\n  border-radius: 3px;\n  background: #fff;\n  color: #000;\n  padding: 5px;\n  text-align: center;\n  white-space: nowrap;\n}\n.noUi-horizontal .noUi-tooltip {\n  transform: translate(-50%, 0);\n  left: 50%;\n  bottom: 120%;\n}\n.noUi-vertical .noUi-tooltip {\n  transform: translate(0, -50%);\n  top: 50%;\n  right: 120%;\n}\nnouislider {\n  display: inline-block !important;\n  margin: 0;\n  vertical-align: middle;\n  width: 100%;\n}\nnouislider .noUi-horizontal {\n  background-color: #e1e1e1;\n  border: 0;\n  box-shadow: none;\n  height: 3px;\n}\nnouislider .noUi-horizontal .noUi-handle {\n  border-color: #394202;\n  border-radius: 50%;\n  height: 15px;\n  right: -15px !important;\n  width: 15px;\n}\nnouislider .noUi-horizontal .noUi-handle::before, nouislider .noUi-horizontal .noUi-handle::after {\n  content: none;\n}\nnouislider .noUi-horizontal .noUi-handle .noUi-tooltip {\n  display: none;\n}\nnouislider .noUi-horizontal .noUi-handle:hover .noUi-tooltip, nouislider .noUi-horizontal .noUi-handle:active .noUi-tooltip {\n  display: block;\n}\nnouislider .noUi-base {\n  height: 3px;\n}\nnouislider .noUi-connect {\n  background-color: #394202;\n}\n#smart-tables .table-1-filters .date-input {\n  display: inline;\n}\n#smart-tables .table-1-filters .reset-date {\n  background-color: transparent;\n  border: 0;\n  display: inline-block;\n  font-size: 22px;\n  vertical-align: sub;\n}\n#smart-tables nouislider {\n  padding: 16px 0;\n}\n#smart-tables .mat-cell {\n  vertical-align: middle;\n}\n#smart-tables .mat-cell[cell-name=status][cell-value=Completed] {\n  color: black;\n}\n#smart-tables .mat-cell[cell-name=status][cell-value=\"In Progress\"] {\n  color: #f8e81c;\n}\n#smart-tables .mat-cell[cell-name=status][cell-value=Cancelled] {\n  color: #ff001f;\n}\n#smart-tables .paginator .mat-paginator-page-size {\n  align-items: center;\n}\n#smart-tables .paginator .mat-paginator-page-size-label {\n  color: black;\n  font-size: 14px;\n  margin-left: 0px;\n  margin-right: 10px;\n}\n#smart-tables .paginator .mat-paginator-page-size-select {\n  margin: 0px;\n}\n#smart-tables .paginator .mat-paginator-page-size-select .mat-form-field-wrapper {\n  padding: 0px;\n  text-align: center;\n}\n#smart-tables .paginator .mat-paginator-page-size-select .mat-form-field-wrapper .mat-form-field-underline {\n  display: none;\n}\n#smart-tables .paginator .mat-paginator-range-actions {\n  color: #394202;\n  font-size: 14px;\n}\n#smart-tables .filter-wrapper .mat-form-field {\n  font-size: 14px;\n  width: 100%;\n}\n#smart-tables .filter-wrapper .mat-form-field-underline {\n  display: inherit;\n}\n#smart-tables .btn-clear {\n  margin-left: 15px;\n}\n#smart-tables .row-input {\n  margin: 15px 0;\n}\n#smart-tables .btn {\n  background-color: #3c6d0c;\n  color: #fff;\n  font-size: 12px;\n  font-weight: bold;\n  letter-spacing: 1.3px;\n  padding: 7px 30px;\n}\n#smart-tables .interests-wrapper .mat-form-field-underline {\n  display: none;\n}\n#smart-tables .interests-wrapper .interests-list .mat-chip-remove {\n  align-self: flex-start;\n  margin-top: 1px;\n}\n.text-card {\n  display: inline-block;\n}\n.card-stats .card-header.card-header-icon, .card-stats .card-header.card-header-text {\n  text-align: left;\n}\n.card-stats .card-header .card-icon + .card-title,\n.card-stats .card-header .card-icon + .card-category {\n  padding-top: 10px;\n  font-size: 30px;\n}\n.card-stats .card-header.card-header-icon .card-title, .card-stats .card-header.card-header-text .card-title, .card-stats .card-header.card-header-icon .card-category, .card-stats .card-header.card-header-text .card-category {\n  margin: 10;\n}\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy93YWduZXJhbHZlcy9EZXNrdG9wL1Byb2pldG9zL1JhZGlvbG9naWFCYWNrZW5kL3JhZGlvbG9naWFiYWNrZW5kL3NyYy9hcHAvc3R5bGVzL190YWJsZXMuc2NzcyIsIi9Vc2Vycy93YWduZXJhbHZlcy9EZXNrdG9wL1Byb2pldG9zL1JhZGlvbG9naWFCYWNrZW5kL3JhZGlvbG9naWFiYWNrZW5kL3NyYy9hcHAvc3R5bGVzL192YXJpYWJsZXMuc2NzcyIsInNyYy9hcHAvY29udGVudC9leGFtZXMvbGlzdC9zdHlsZXMvbGlzdC5jb21wb25lbnQuc2NzcyIsIi9Vc2Vycy93YWduZXJhbHZlcy9EZXNrdG9wL1Byb2pldG9zL1JhZGlvbG9naWFCYWNrZW5kL3JhZGlvbG9naWFiYWNrZW5kL3NyYy9hcHAvc3R5bGVzL19ub3Vpc2xpZGVyLnNjc3MiLCIvVXNlcnMvd2FnbmVyYWx2ZXMvRGVza3RvcC9Qcm9qZXRvcy9SYWRpb2xvZ2lhQmFja2VuZC9yYWRpb2xvZ2lhYmFja2VuZC9zcmMvYXBwL3N0eWxlcy9fbm91aXNsaWRlci1vdmVycmlkZS5zY3NzIiwiL1VzZXJzL3dhZ25lcmFsdmVzL0Rlc2t0b3AvUHJvamV0b3MvUmFkaW9sb2dpYUJhY2tlbmQvcmFkaW9sb2dpYWJhY2tlbmQvc3JjL2FwcC9jb250ZW50L2V4YW1lcy9saXN0L3N0eWxlcy9saXN0LmNvbXBvbmVudC5zY3NzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBO0VBQ0ksWUFBQTtFQUNBLGVBQUE7RUFDQSxxQkNxRWdCO0FDcEVwQjtBRkFJO0VBQ0ksa0JBQUE7RUFDQSxZQUFBO0VBQ0EsV0FBQTtBRUVSO0FGRUE7RUFDSSxrQkFBQTtBRUNKO0FGQ1E7RUFDSSxhQUFBO0VBQ0EsaUJBQUE7QUVDWjtBRkdnQjtFQUNJLFlBQUE7RUFDQSxlQzhDTDtFRDdDSyxpQkFBQTtFQUNBLHFCQ29EQztFRG5ERCx5QkFBQTtBRURwQjtBRlNZO0VBQ0ksWUFBQTtFQUNBLGVBQUE7RUFDQSwrQkFBQTtBRVBoQjtBRlFnQjtFQUNJLG9DQUFBO0FFTnBCO0FGUWdCO0VBRUksbUJBQUE7QUVQcEI7QUZjb0I7RUFDSSxtQkFBQTtBRVp4QjtBRmtCb0I7RUFDSSx5QkFBQTtBRWhCeEI7QUZrQm9CO0VBQ0ksZ0JBQUE7QUVoQnhCO0FGd0JvQjtFQUNJLG1CQUFBO0FFdEJ4QjtBQy9DQSwrQ0FBQTtBQUNBOzs7RUFBQTtBQUlBOztFQUVFLDJCQUFBO0VBQ0EsNkNBQUE7RUFDQSx5QkFBQTtFQUVBLGtCQUFBO0VBRUEsc0JBQUE7RUFDQSxpQkFBQTtFQUVBLHNCQUFBO0FEa0RGO0FDaERBO0VBQ0Usa0JBQUE7RUFDQSxjQUFBO0FEbURGO0FDakRBOztFQUVFLFdBQUE7RUFDQSxZQUFBO0VBQ0Esa0JBQUE7RUFDQSxVQUFBO0FEb0RGO0FDbERBO0VBQUE7QUFFQTtFQUNFLGdCQUFBO0VBQ0EsVUFBQTtBRHFERjtBQ25EQTs7RUFFRSxzQkFBQTtFQUNBLGtCQUFBO0VBQ0EsVUFBQTtFQUNBLE1BQUE7RUFDQSxPQUFBO0VBQ0EsWUFBQTtFQUNBLFdBQUE7RUFFQSxxQkFBQTtBRHNERjtBQ3BEQTtFQUFBO0FBRUE7RUFDRSxVQUFBO0VBQ0EsUUFBQTtBRHVERjtBQ3JEQTs7RUFBQTtBQUdBO0VBQ0UsUUFBQTtBRHdERjtBQ3REQTtFQUNFLFNBQUE7QUR5REY7QUN2REE7RUFDRSxrQkFBQTtBRDBERjtBQ3hEQTs7RUFHRSwwQkFBQTtBRDJERjtBQ3pEQTtFQUNFLDBCQUFBO0FENERGO0FDMURBO0VBQUE7QUFFQTtFQUNFLFlBQUE7QUQ2REY7QUMzREE7RUFDRSxXQUFBO0VBQ0EsWUFBQTtFQUNBLFdBQUE7RUFDQSxTQUFBO0FEOERGO0FDNURBO0VBQ0UsV0FBQTtBRCtERjtBQzdEQTtFQUNFLFdBQUE7RUFDQSxZQUFBO0VBQ0EsVUFBQTtFQUNBLFVBQUE7QURnRUY7QUM5REE7RUFDRSxZQUFBO0VBQ0EsVUFBQTtBRGlFRjtBQy9EQTs7RUFBQTtBQUdBO0VBQ0UsbUJBQUE7RUFDQSxrQkFBQTtFQUNBLHlCQUFBO0VBQ0Esd0RBQUE7QURrRUY7QUNoRUE7RUFDRSxrQkFBQTtBRG1FRjtBQ2pFQTtFQUNFLG1CQUFBO0FEb0VGO0FDbEVBO0VBQUE7QUFFQTtFQUNFLGlCQUFBO0FEcUVGO0FDbkVBO0VBQ0UsaUJBQUE7QURzRUY7QUNwRUE7RUFDRSx5QkFBQTtFQUNBLGtCQUFBO0VBQ0EsZ0JBQUE7RUFDQSxlQUFBO0VBQ0EsNEVBQUE7QUR1RUY7QUNyRUE7RUFDRSx5RUFBQTtBRHdFRjtBQ3RFQTtFQUFBO0FBRUE7O0VBRUUsV0FBQTtFQUNBLGNBQUE7RUFDQSxrQkFBQTtFQUNBLFlBQUE7RUFDQSxVQUFBO0VBQ0EsbUJBQUE7RUFDQSxVQUFBO0VBQ0EsUUFBQTtBRHlFRjtBQ3ZFQTtFQUNFLFVBQUE7QUQwRUY7QUN4RUE7O0VBRUUsV0FBQTtFQUNBLFdBQUE7RUFDQSxTQUFBO0VBQ0EsU0FBQTtBRDJFRjtBQ3pFQTtFQUNFLFNBQUE7QUQ0RUY7QUMxRUE7RUFBQTtBQUVBO0VBQ0UsbUJBQUE7QUQ2RUY7QUMzRUE7OztFQUdFLG1CQUFBO0FEOEVGO0FDNUVBOztFQUFBO0FBR0E7O0VBR0Usc0JBQUE7QUQrRUY7QUM3RUE7RUFDRSxrQkFBQTtFQUNBLFdBQUE7QURnRkY7QUM5RUE7O0VBQUE7QUFHQTtFQUNFLGtCQUFBO0VBQ0EsbUJBQUE7RUFDQSxrQkFBQTtBRGlGRjtBQy9FQTtFQUNFLFdBQUE7RUFDQSxlQUFBO0FEa0ZGO0FDaEZBOztFQUFBO0FBR0E7RUFDRSxrQkFBQTtFQUNBLGdCQUFBO0FEbUZGO0FDakZBO0VBQ0UsZ0JBQUE7QURvRkY7QUNsRkE7RUFDRSxnQkFBQTtBRHFGRjtBQ25GQTs7RUFBQTtBQUdBO0VBQ0UsZUFBQTtFQUNBLFlBQUE7RUFDQSxTQUFBO0VBQ0EsT0FBQTtFQUNBLFdBQUE7QURzRkY7QUNwRkE7RUFFRSwrQkFBQTtBRHVGRjtBQ3JGQTtFQUVFLDhCQUFBO0FEd0ZGO0FDdEZBO0VBQ0UsaUJBQUE7RUFDQSxVQUFBO0VBQ0EsV0FBQTtBRHlGRjtBQ3ZGQTtFQUNFLFlBQUE7QUQwRkY7QUN4RkE7RUFDRSxZQUFBO0FEMkZGO0FDekZBOztFQUFBO0FBR0E7RUFDRSxlQUFBO0VBQ0EsWUFBQTtFQUNBLE1BQUE7RUFDQSxVQUFBO0FENEZGO0FDMUZBO0VBRUUsZ0NBQUE7RUFDQSxrQkFBQTtBRDZGRjtBQzNGQTtFQUVFLDRCQUFBO0FEOEZGO0FDNUZBO0VBQ0UsVUFBQTtFQUNBLFdBQUE7RUFDQSxnQkFBQTtBRCtGRjtBQzdGQTtFQUNFLFdBQUE7QURnR0Y7QUM5RkE7RUFDRSxXQUFBO0FEaUdGO0FDL0ZBO0VBQ0UsY0FBQTtFQUNBLGtCQUFBO0VBQ0EseUJBQUE7RUFDQSxrQkFBQTtFQUNBLGdCQUFBO0VBQ0EsV0FBQTtFQUNBLFlBQUE7RUFDQSxrQkFBQTtFQUNBLG1CQUFBO0FEa0dGO0FDaEdBO0VBRUUsNkJBQUE7RUFDQSxTQUFBO0VBQ0EsWUFBQTtBRG1HRjtBQ2pHQTtFQUVFLDZCQUFBO0VBQ0EsUUFBQTtFQUNBLFdBQUE7QURvR0Y7QUUzWEE7RUFDRSxnQ0FBQTtFQUNBLFNBQUE7RUFDQSxzQkFBQTtFQUNBLFdBQUE7QUY4WEY7QUU1WEU7RUFDRSx5QkhHSTtFR0ZKLFNBQUE7RUFDQSxnQkFBQTtFQUNBLFdBQUE7QUY4WEo7QUU1WEk7RUFDRSxxQkhSRztFR1NILGtCQUFBO0VBQ0EsWUFBQTtFQUNBLHVCQUFBO0VBQ0EsV0FBQTtBRjhYTjtBRTVYTTtFQUVFLGFBQUE7QUY2WFI7QUUxWE07RUFDRSxhQUFBO0FGNFhSO0FFelhNO0VBRUUsY0FBQTtBRjBYUjtBRXJYRTtFQUNFLFdBQUE7QUZ1WEo7QUVwWEU7RUFDRSx5QkhuQ0s7QUN5WlQ7QUczWk07RUFDRSxlQUFBO0FIOFpSO0FHMVpNO0VBQ0UsNkJBQUE7RUFDQSxTQUFBO0VBQ0EscUJBQUE7RUFDQSxlSm1ETztFSWxEUCxtQkFBQTtBSDRaUjtBR3haSTtFQUNFLGVBQUE7QUgwWk47QUd2Wkk7RUFDRSxzQkFBQTtBSHlaTjtBR3RaUTtFQUNFLFlBQUE7QUh3WlY7QUdyWlE7RUFDRSxjSmJEO0FDb2FUO0FHcFpRO0VBQ0UsY0puQko7QUN5YU47QUc5WU07RUFDRSxtQkFBQTtBSGdaUjtBRzdZTTtFQUNFLFlBQUE7RUFDQSxlQUFBO0VBQ0EsZ0JBQUE7RUFDQSxrQkFBQTtBSCtZUjtBRzVZTTtFQUNFLFdBQUE7QUg4WVI7QUc1WVE7RUFDRSxZQUFBO0VBQ0Esa0JBQUE7QUg4WVY7QUc1WVU7RUFDRSxhQUFBO0FIOFlaO0FHellNO0VBQ0UsY0o1Q0M7RUk2Q0QsZUFBQTtBSDJZUjtBR3RZTTtFQUNFLGVBQUE7RUFDQSxXQUFBO0FId1lSO0FHcllNO0VBQ0UsZ0JBQUE7QUh1WVI7QUduWUk7RUFDRSxpQkFBQTtBSHFZTjtBR2xZSTtFQUNFLGNBQUE7QUhvWU47QUdqWUk7RUFDRSx5Qkp4RUU7RUl5RUYsV0pyRUU7RUlzRUYsZUo1QlM7RUk2QlQsaUJBQUE7RUFDQSxxQkp2QmU7RUl3QmYsaUJBQUE7QUhtWU47QUcvWE07RUFDRSxhQUFBO0FIaVlSO0FHN1hRO0VBQ0Usc0JBQUE7RUFDQSxlQUFBO0FIK1hWO0FHelhFO0VBQ0UscUJBQUE7QUg0WEo7QUd0WE07RUFFRSxnQkFBQTtBSHdYUjtBR3JYTTs7RUFFRSxpQkFBQTtFQUNBLGVBQUE7QUh1WFI7QUdwWE07RUFJRSxVQUFBO0FIbVhSIiwiZmlsZSI6InNyYy9hcHAvY29udGVudC9leGFtZXMvbGlzdC9zdHlsZXMvbGlzdC5jb21wb25lbnQuc2NzcyIsInNvdXJjZXNDb250ZW50IjpbIiV0ZCB7XG4gICAgY29sb3I6IGdyYXlzY2FsZSgkY29sb3I6ICMwMDAwMDApO1xuICAgIGZvbnQtc2l6ZTogMTNweDtcbiAgICBsZXR0ZXItc3BhY2luZzogJGxldHRlci1zcGFjaW5nLWxnO1xuICAgIC5wcm9maWxlLXBpYyB7XG4gICAgICAgIGJvcmRlci1yYWRpdXM6IDUwJTtcbiAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgICB3aWR0aDogMzBweDtcbiAgICB9XG59XG5cbi50YWJsZS13cmFwcGVyIHtcbiAgICBvdmVyZmxvdy15OiBoaWRkZW47XG4gICAgLnRhYmxlIHtcbiAgICAgICAgdGgge1xuICAgICAgICAgICAgcGFkZGluZzogMTVweDtcbiAgICAgICAgICAgIHBhZGRpbmctbGVmdDogNnB4O1xuICAgICAgICB9XG4gICAgICAgIHRoZWFkIHtcbiAgICAgICAgICAgIHRyIHtcbiAgICAgICAgICAgICAgICB0aCB7XG4gICAgICAgICAgICAgICAgICAgIGNvbG9yOiBibGFjaztcbiAgICAgICAgICAgICAgICAgICAgZm9udC1zaXplOiAkZm9udC1zaXplLXNtO1xuICAgICAgICAgICAgICAgICAgICBmb250LXdlaWdodDogYm9sZDtcbiAgICAgICAgICAgICAgICAgICAgbGV0dGVyLXNwYWNpbmc6ICRsZXR0ZXItc3BhY2luZy14eHM7XG4gICAgICAgICAgICAgICAgICAgIHRleHQtdHJhbnNmb3JtOiB1cHBlcmNhc2U7XG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgIHRkIHtcbiAgICAgICAgICAgICAgICAgICAgQGV4dGVuZCAldGQ7XG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICAgIHRib2R5IHtcbiAgICAgICAgICAgIHRyIHtcbiAgICAgICAgICAgICAgICBoZWlnaHQ6IGF1dG87XG4gICAgICAgICAgICAgICAgY3Vyc29yOiBwb2ludGVyO1xuICAgICAgICAgICAgICAgIHRyYW5zaXRpb246IGJhY2tncm91bmQtY29sb3IgMXM7XG4gICAgICAgICAgICAgICAgJjpob3ZlciB7XG4gICAgICAgICAgICAgICAgICAgIGJhY2tncm91bmQtY29sb3I6ICRncmV5MyAhaW1wb3J0YW50O1xuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICB0ZCB7XG4gICAgICAgICAgICAgICAgICAgIEBleHRlbmQgJXRkO1xuICAgICAgICAgICAgICAgICAgICBib3JkZXItYm90dG9tOiBub25lO1xuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgIH1cbiAgICAgICAgfVxuICAgICAgICAmLnRhYmxlLXN0cmlwZXMge1xuICAgICAgICAgICAgdGhlYWQge1xuICAgICAgICAgICAgICAgIHRyIHtcbiAgICAgICAgICAgICAgICAgICAgdGgge1xuICAgICAgICAgICAgICAgICAgICAgICAgYm9yZGVyLWJvdHRvbTogbm9uZTtcbiAgICAgICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgIH1cbiAgICAgICAgICAgIHRib2R5IHtcbiAgICAgICAgICAgICAgICB0ciB7XG4gICAgICAgICAgICAgICAgICAgICY6bnRoLWNoaWxkKG9kZCkge1xuICAgICAgICAgICAgICAgICAgICAgICAgYmFja2dyb3VuZC1jb2xvcjogZ3JheXNjYWxlKCRjb2xvcjogI2U5ZTdlNyk7XG4gICAgICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICAgICAgdGQge1xuICAgICAgICAgICAgICAgICAgICAgICAgYm9yZGVyLXRvcDogbm9uZTtcbiAgICAgICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgIH1cbiAgICAgICAgfVxuICAgICAgICAmLnRhYmxlLWxpbmVzIHtcbiAgICAgICAgICAgIHRoZWFkIHtcbiAgICAgICAgICAgICAgICB0ciB7XG4gICAgICAgICAgICAgICAgICAgIHRoIHtcbiAgICAgICAgICAgICAgICAgICAgICAgIGJvcmRlci1ib3R0b206IG5vbmU7XG4gICAgICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICB9XG4gICAgICAgIH1cbiAgICB9XG59XG5cbm5nMi1zbWFydC10YWJsZSB7XG4gICAgdGFibGUge1xuICAgICAgICBAZXh0ZW5kIC50YWJsZTtcbiAgICAgICAgQGV4dGVuZCAudGFibGUtc3RyaXBlcztcbiAgICB9XG59IiwiLy8gQ29sb3JzXG4kdmlvbGV0OiAjNGUwMTkyO1xuJHBpbms6ICNmZjg3ZjM7XG4kcGluazI6ICMyMDhmMzI7XG4kcGluazM6ICNmMmUzZmY7XG4kYmVpZ2U6ICNmNGYzZWY7XG4kYmVpZ2UyOiAjZmZmM2Y0O1xuJGFxdWE6ICM1MGUzYzI7XG4kcHVycGxlOiAjMzk0MjAyO1xuJHB1cnBsZTI6ICMxYjgzMjM7XG4kZ3JleTogIzliOWI5YjtcbiRncmV5MjogI2Y2ZjZmNjtcbiRncmV5MzogI2RiZGJkYjtcbiRncmV5NDogI2UxZTFlMTtcbiRncmV5NTogIzU1NTtcbiRncmV5NjogI2Y0ZjNlZjtcbiRncmV5NzogI2YwZjBmMDtcbiRncmV5ODogIzRhNGE0YTtcbiRyZWQ6ICNmZjAwMWY7XG4kcmVkMjogI2QwMDExYjtcbiR5ZWxsb3c6ICNmOGU4MWM7XG4kb3JhbmdlOiAjZjZhNjIzO1xuJG9yYW5nZTI6ICNmNWE2MjM7XG4kZ3JlZW46ICMzYzZkMGM7XG4kZ3JlZW4yOiAjN2RkMzIxOWM7XG4kZ3JlZW4zOiAjN2M5MTA5O1xuJGdyZWVuNDogIzM5NDIwMjtcbiR3aGl0ZTogI2ZmZjtcbiRibGFjazogIzAwMDtcbiRibHVlOiAjMjYwNGFmO1xuJGJsdWUtZmI6ICMzYjU5OTg7XG4kc2t5Ymx1ZTogIzA0YWJmZjtcblxuXG4kYm9keS1iZy1jb2xvcjogJGJlaWdlO1xuXG4kbmF2LWJnLXRvcC1jb2xvcjogJGdyZWVuO1xuJG5hdi1iZy1idG0tY29sb3I6ICRncmVlbjtcblxuJGluYWN0aXZlLWJnLWNvbG9yOiAkZ3JleTM7XG5cbiRjYXJkLWJnLWNvbG9yOiAkd2hpdGU7XG4kY2FyZC10eHQtY29sb3I6ICRncmVlbjQ7XG5cbiRmb3JtLWxhYmVsLWJpZy1jb2xvcjogJGdyZWVuNDtcbiRmb3JtLWxhYmVsLWNvbG9yOiAkZ3JleTtcbiRmb3JtLWlucHV0LWNvbG9yOiAkZ3JleTg7XG4kZm9ybS1pbnB1dC1icm9kZXItY29sb3I6ICRncmV5NDtcbiRmb3JtLWlucHV0LWJyb2Rlci1yYWRpdXM6IDRweDtcbiRmb3JtLWNoZWNrYm94LXJhZGlvLWNvbG9yOiAkZ3JlZW4yO1xuJGZvcm0tZXJyb3ItY29sb3I6ICRyZWQyO1xuJGZvcm0tZXJyb3ItYmtnLWNvbG9yOiAkYmVpZ2UyO1xuJGZvcm0tdGFnLWNvbG9yOiAkZ3JlZW47XG4kZm9ybS1zbGlkZXItY29sb3I6ICRncmVlbjtcblxuJHNoYWRvdzogMCAycHggOXB4IDAgcmdiYSgwLCAwLCAwLCAuMDYpO1xuJHNoYWRvdy1ob3ZlcjogMCAycHggOXB4IDAgcmdiYSgwLCAwLCAwLCAuNSk7XG4kc2hhZG93LWNvbnRhaW5lcjogMCAycHggNHB4IDAgcmdiYSgwLCAwLCAwLCAuMzIpO1xuJHNoYWRvdy1pbnNldDogaW5zZXQgMCAwIDE1cHggMCByZ2JhKDAsIDAsIDAsIC4yKTtcblxuLy8gVGV4dHNcbiRmb250LWZhbWlseTogJ0xhdG8nLCAnSGVsdmV0aWNhJywgc2Fucy1zZXJpZjtcblxuJGZvbnQtc2l6ZS14eHhsZzogNTdweDtcbiRmb250LXNpemUteHhsZzogNDBweDtcbiRmb250LXNpemUteGxnOiAzMnB4O1xuJGZvbnQtc2l6ZS1sZzogMjJweDtcbiRmb250LXNpemUtbWQ6IDE3cHg7XG4kZm9udC1zaXplLXNtOiAxNHB4O1xuJGZvbnQtc2l6ZS14czogMTJweDtcbiRmb250LXNpemUteHhzOiA5cHg7XG5cbiRsZXR0ZXItc3BhY2luZy1sZzogMi4zcHg7XG4kbGV0dGVyLXNwYWNpbmctbWQ6IDIuMXB4O1xuJGxldHRlci1zcGFjaW5nLXNtOiAxLjhweDtcbiRsZXR0ZXItc3BhY2luZy14czogMS41cHg7XG4kbGV0dGVyLXNwYWNpbmcteHhzOiAxLjNweDtcbiRsZXR0ZXItc3BhY2luZy14eHhzOiAxLjFweDtcblxuLy8gTWVhc3VyZXNcbiRjaGVja2JveC1yYWRpby1zaXplOiAxMnB4O1xuJGlucHV0LWhlaWdodDogMzhweDtcbiRzZXBhcmF0aW9uOiAxNXB4O1xuJHNpZGUtbWVudS13aWR0aDogMjYwcHg7XG4kdG9wLW5hdmJhci1icmVha3BvaW50OiA5MTBweDtcblxuLy8gSW1hZ2VzIC0gUHJlbG9hZCBpbWFnZXNcbiRwcmVsb2FkLWltYWdlLWJnOiByZ2JhKGRhcmtlbigkd2hpdGUsIDEwKSwgLjI1KTtcblxuLy8gSW1hZ2VzIC0gUHJlbG9hZCBpbWFnZXMgLSBTcGlubmVyIG9uIGxvYWRcbiRzcGlubmVyLXNpemU6IDI4cHg7XG4kc3Bpbm5lci1jb2xvcjogJGdyZXk7XG4iLCIudGFibGUtd3JhcHBlciAudGFibGUgdGJvZHkgdHIgdGQsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZSB0Ym9keSB0ciB0ZCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlIHRib2R5IHRyIHRkLCAudGFibGUtd3JhcHBlciAudGFibGUgdGhlYWQgdHIgdGQsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZSB0aGVhZCB0ciB0ZCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlIHRoZWFkIHRyIHRkIHtcbiAgY29sb3I6IGJsYWNrO1xuICBmb250LXNpemU6IDEzcHg7XG4gIGxldHRlci1zcGFjaW5nOiAyLjNweDtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZSB0Ym9keSB0ciB0ZCAucHJvZmlsZS1waWMsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZSB0Ym9keSB0ciB0ZCAucHJvZmlsZS1waWMsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0Ym9keSB0ciB0ZCAucHJvZmlsZS1waWMsIC50YWJsZS13cmFwcGVyIC50YWJsZSB0aGVhZCB0ciB0ZCAucHJvZmlsZS1waWMsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZSB0aGVhZCB0ciB0ZCAucHJvZmlsZS1waWMsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0aGVhZCB0ciB0ZCAucHJvZmlsZS1waWMge1xuICBib3JkZXItcmFkaXVzOiA1MCU7XG4gIGhlaWdodDogYXV0bztcbiAgd2lkdGg6IDMwcHg7XG59XG5cbi50YWJsZS13cmFwcGVyIHtcbiAgb3ZlcmZsb3cteTogaGlkZGVuO1xufVxuLnRhYmxlLXdyYXBwZXIgLnRhYmxlIHRoLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGgsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0aCB7XG4gIHBhZGRpbmc6IDE1cHg7XG4gIHBhZGRpbmctbGVmdDogNnB4O1xufVxuLnRhYmxlLXdyYXBwZXIgLnRhYmxlIHRoZWFkIHRyIHRoLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGhlYWQgdHIgdGgsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0aGVhZCB0ciB0aCB7XG4gIGNvbG9yOiBibGFjaztcbiAgZm9udC1zaXplOiAxNHB4O1xuICBmb250LXdlaWdodDogYm9sZDtcbiAgbGV0dGVyLXNwYWNpbmc6IDEuM3B4O1xuICB0ZXh0LXRyYW5zZm9ybTogdXBwZXJjYXNlO1xufVxuLnRhYmxlLXdyYXBwZXIgLnRhYmxlIHRib2R5IHRyLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGJvZHkgdHIsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0Ym9keSB0ciB7XG4gIGhlaWdodDogYXV0bztcbiAgY3Vyc29yOiBwb2ludGVyO1xuICB0cmFuc2l0aW9uOiBiYWNrZ3JvdW5kLWNvbG9yIDFzO1xufVxuLnRhYmxlLXdyYXBwZXIgLnRhYmxlIHRib2R5IHRyOmhvdmVyLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGJvZHkgdHI6aG92ZXIsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0Ym9keSB0cjpob3ZlciB7XG4gIGJhY2tncm91bmQtY29sb3I6ICNkYmRiZGIgIWltcG9ydGFudDtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZSB0Ym9keSB0ciB0ZCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRib2R5IHRyIHRkLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGJvZHkgdHIgdGQge1xuICBib3JkZXItYm90dG9tOiBub25lO1xufVxuLnRhYmxlLXdyYXBwZXIgLnRhYmxlLnRhYmxlLXN0cmlwZXMgdGhlYWQgdHIgdGgsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZS50YWJsZSB0aGVhZCB0ciB0aCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlLnRhYmxlIHRoZWFkIHRyIHRoLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUudGFibGUtc3RyaXBlcyB0aGVhZCB0ciB0aCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRoZWFkIHRyIHRoLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUudGFibGUtc3RyaXBlcyB0aGVhZCB0ciB0aCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlIHRoZWFkIHRyIHRoIHtcbiAgYm9yZGVyLWJvdHRvbTogbm9uZTtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZS50YWJsZS1zdHJpcGVzIHRib2R5IHRyOm50aC1jaGlsZChvZGQpLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGJvZHkgdHI6bnRoLWNoaWxkKG9kZCksIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0Ym9keSB0cjpudGgtY2hpbGQob2RkKSB7XG4gIGJhY2tncm91bmQtY29sb3I6ICNlOGU4ZTg7XG59XG4udGFibGUtd3JhcHBlciAudGFibGUudGFibGUtc3RyaXBlcyB0Ym9keSB0ciB0ZCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlLnRhYmxlIHRib2R5IHRyIHRkLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUudGFibGUgdGJvZHkgdHIgdGQsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZS50YWJsZS1zdHJpcGVzIHRib2R5IHRyIHRkLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGJvZHkgdHIgdGQsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZS50YWJsZS1zdHJpcGVzIHRib2R5IHRyIHRkLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGJvZHkgdHIgdGQge1xuICBib3JkZXItdG9wOiBub25lO1xufVxuLnRhYmxlLXdyYXBwZXIgLnRhYmxlLnRhYmxlLWxpbmVzIHRoZWFkIHRyIHRoLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUudGFibGUtbGluZXMgdGhlYWQgdHIgdGgsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZS50YWJsZS1saW5lcyB0aGVhZCB0ciB0aCB7XG4gIGJvcmRlci1ib3R0b206IG5vbmU7XG59XG5cbi8qISBub3Vpc2xpZGVyIC0gMTEuMC4zIC0gMjAxOC0wMS0yMSAxNDowNDowNyAqL1xuLyogRnVuY3Rpb25hbCBzdHlsaW5nO1xuICogVGhlc2Ugc3R5bGVzIGFyZSByZXF1aXJlZCBmb3Igbm9VaVNsaWRlciB0byBmdW5jdGlvbi5cbiAqIFlvdSBkb24ndCBuZWVkIHRvIGNoYW5nZSB0aGVzZSBydWxlcyB0byBhcHBseSB5b3VyIGRlc2lnbi5cbiAqL1xuLm5vVWktdGFyZ2V0LFxuLm5vVWktdGFyZ2V0ICoge1xuICAtd2Via2l0LXRvdWNoLWNhbGxvdXQ6IG5vbmU7XG4gIC13ZWJraXQtdGFwLWhpZ2hsaWdodC1jb2xvcjogcmdiYSgwLCAwLCAwLCAwKTtcbiAgLXdlYmtpdC11c2VyLXNlbGVjdDogbm9uZTtcbiAgLW1zLXRvdWNoLWFjdGlvbjogbm9uZTtcbiAgdG91Y2gtYWN0aW9uOiBub25lO1xuICAtbXMtdXNlci1zZWxlY3Q6IG5vbmU7XG4gIC1tb3otdXNlci1zZWxlY3Q6IG5vbmU7XG4gIHVzZXItc2VsZWN0OiBub25lO1xuICAtbW96LWJveC1zaXppbmc6IGJvcmRlci1ib3g7XG4gIGJveC1zaXppbmc6IGJvcmRlci1ib3g7XG59XG5cbi5ub1VpLXRhcmdldCB7XG4gIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgZGlyZWN0aW9uOiBsdHI7XG59XG5cbi5ub1VpLWJhc2UsXG4ubm9VaS1jb25uZWN0cyB7XG4gIHdpZHRoOiAxMDAlO1xuICBoZWlnaHQ6IDEwMCU7XG4gIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgei1pbmRleDogMTtcbn1cblxuLyogV3JhcHBlciBmb3IgYWxsIGNvbm5lY3QgZWxlbWVudHMuXG4gKi9cbi5ub1VpLWNvbm5lY3RzIHtcbiAgb3ZlcmZsb3c6IGhpZGRlbjtcbiAgei1pbmRleDogMDtcbn1cblxuLm5vVWktY29ubmVjdCxcbi5ub1VpLW9yaWdpbiB7XG4gIHdpbGwtY2hhbmdlOiB0cmFuc2Zvcm07XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgei1pbmRleDogMTtcbiAgdG9wOiAwO1xuICBsZWZ0OiAwO1xuICBoZWlnaHQ6IDEwMCU7XG4gIHdpZHRoOiAxMDAlO1xuICAtd2Via2l0LXRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgdHJhbnNmb3JtLW9yaWdpbjogMCAwO1xufVxuXG4vKiBPZmZzZXQgZGlyZWN0aW9uXG4gKi9cbmh0bWw6bm90KFtkaXI9cnRsXSkgLm5vVWktaG9yaXpvbnRhbCAubm9VaS1vcmlnaW4ge1xuICBsZWZ0OiBhdXRvO1xuICByaWdodDogMDtcbn1cblxuLyogR2l2ZSBvcmlnaW5zIDAgaGVpZ2h0L3dpZHRoIHNvIHRoZXkgZG9uJ3QgaW50ZXJmZXJlIHdpdGggY2xpY2tpbmcgdGhlXG4gKiBjb25uZWN0IGVsZW1lbnRzLlxuICovXG4ubm9VaS12ZXJ0aWNhbCAubm9VaS1vcmlnaW4ge1xuICB3aWR0aDogMDtcbn1cblxuLm5vVWktaG9yaXpvbnRhbCAubm9VaS1vcmlnaW4ge1xuICBoZWlnaHQ6IDA7XG59XG5cbi5ub1VpLWhhbmRsZSB7XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbn1cblxuLm5vVWktc3RhdGUtdGFwIC5ub1VpLWNvbm5lY3QsXG4ubm9VaS1zdGF0ZS10YXAgLm5vVWktb3JpZ2luIHtcbiAgLXdlYmtpdC10cmFuc2l0aW9uOiB0cmFuc2Zvcm0gMC4zcztcbiAgdHJhbnNpdGlvbjogdHJhbnNmb3JtIDAuM3M7XG59XG5cbi5ub1VpLXN0YXRlLWRyYWcgKiB7XG4gIGN1cnNvcjogaW5oZXJpdCAhaW1wb3J0YW50O1xufVxuXG4vKiBTbGlkZXIgc2l6ZSBhbmQgaGFuZGxlIHBsYWNlbWVudDtcbiAqL1xuLm5vVWktaG9yaXpvbnRhbCB7XG4gIGhlaWdodDogMThweDtcbn1cblxuLm5vVWktaG9yaXpvbnRhbCAubm9VaS1oYW5kbGUge1xuICB3aWR0aDogMzRweDtcbiAgaGVpZ2h0OiAyOHB4O1xuICBsZWZ0OiAtMTdweDtcbiAgdG9wOiAtNnB4O1xufVxuXG4ubm9VaS12ZXJ0aWNhbCB7XG4gIHdpZHRoOiAxOHB4O1xufVxuXG4ubm9VaS12ZXJ0aWNhbCAubm9VaS1oYW5kbGUge1xuICB3aWR0aDogMjhweDtcbiAgaGVpZ2h0OiAzNHB4O1xuICBsZWZ0OiAtNnB4O1xuICB0b3A6IC0xN3B4O1xufVxuXG5odG1sOm5vdChbZGlyPXJ0bF0pIC5ub1VpLWhvcml6b250YWwgLm5vVWktaGFuZGxlIHtcbiAgcmlnaHQ6IC0xN3B4O1xuICBsZWZ0OiBhdXRvO1xufVxuXG4vKiBTdHlsaW5nO1xuICogR2l2aW5nIHRoZSBjb25uZWN0IGVsZW1lbnQgYSBib3JkZXIgcmFkaXVzIGNhdXNlcyBpc3N1ZXMgd2l0aCB1c2luZyB0cmFuc2Zvcm06IHNjYWxlXG4gKi9cbi5ub1VpLXRhcmdldCB7XG4gIGJhY2tncm91bmQ6ICNGQUZBRkE7XG4gIGJvcmRlci1yYWRpdXM6IDRweDtcbiAgYm9yZGVyOiAxcHggc29saWQgI0QzRDNEMztcbiAgYm94LXNoYWRvdzogaW5zZXQgMCAxcHggMXB4ICNGMEYwRjAsIDAgM3B4IDZweCAtNXB4ICNCQkI7XG59XG5cbi5ub1VpLWNvbm5lY3RzIHtcbiAgYm9yZGVyLXJhZGl1czogM3B4O1xufVxuXG4ubm9VaS1jb25uZWN0IHtcbiAgYmFja2dyb3VuZDogIzNGQjhBRjtcbn1cblxuLyogSGFuZGxlcyBhbmQgY3Vyc29ycztcbiAqL1xuLm5vVWktZHJhZ2dhYmxlIHtcbiAgY3Vyc29yOiBldy1yZXNpemU7XG59XG5cbi5ub1VpLXZlcnRpY2FsIC5ub1VpLWRyYWdnYWJsZSB7XG4gIGN1cnNvcjogbnMtcmVzaXplO1xufVxuXG4ubm9VaS1oYW5kbGUge1xuICBib3JkZXI6IDFweCBzb2xpZCAjRDlEOUQ5O1xuICBib3JkZXItcmFkaXVzOiAzcHg7XG4gIGJhY2tncm91bmQ6ICNGRkY7XG4gIGN1cnNvcjogZGVmYXVsdDtcbiAgYm94LXNoYWRvdzogaW5zZXQgMCAwIDFweCAjRkZGLCBpbnNldCAwIDFweCA3cHggI0VCRUJFQiwgMCAzcHggNnB4IC0zcHggI0JCQjtcbn1cblxuLm5vVWktYWN0aXZlIHtcbiAgYm94LXNoYWRvdzogaW5zZXQgMCAwIDFweCAjRkZGLCBpbnNldCAwIDFweCA3cHggI0RERCwgMCAzcHggNnB4IC0zcHggI0JCQjtcbn1cblxuLyogSGFuZGxlIHN0cmlwZXM7XG4gKi9cbi5ub1VpLWhhbmRsZTpiZWZvcmUsXG4ubm9VaS1oYW5kbGU6YWZ0ZXIge1xuICBjb250ZW50OiBcIlwiO1xuICBkaXNwbGF5OiBibG9jaztcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICBoZWlnaHQ6IDE0cHg7XG4gIHdpZHRoOiAxcHg7XG4gIGJhY2tncm91bmQ6ICNFOEU3RTY7XG4gIGxlZnQ6IDE0cHg7XG4gIHRvcDogNnB4O1xufVxuXG4ubm9VaS1oYW5kbGU6YWZ0ZXIge1xuICBsZWZ0OiAxN3B4O1xufVxuXG4ubm9VaS12ZXJ0aWNhbCAubm9VaS1oYW5kbGU6YmVmb3JlLFxuLm5vVWktdmVydGljYWwgLm5vVWktaGFuZGxlOmFmdGVyIHtcbiAgd2lkdGg6IDE0cHg7XG4gIGhlaWdodDogMXB4O1xuICBsZWZ0OiA2cHg7XG4gIHRvcDogMTRweDtcbn1cblxuLm5vVWktdmVydGljYWwgLm5vVWktaGFuZGxlOmFmdGVyIHtcbiAgdG9wOiAxN3B4O1xufVxuXG4vKiBEaXNhYmxlZCBzdGF0ZTtcbiAqL1xuW2Rpc2FibGVkXSAubm9VaS1jb25uZWN0IHtcbiAgYmFja2dyb3VuZDogI0I4QjhCODtcbn1cblxuW2Rpc2FibGVkXS5ub1VpLXRhcmdldCxcbltkaXNhYmxlZF0ubm9VaS1oYW5kbGUsXG5bZGlzYWJsZWRdIC5ub1VpLWhhbmRsZSB7XG4gIGN1cnNvcjogbm90LWFsbG93ZWQ7XG59XG5cbi8qIEJhc2U7XG4gKlxuICovXG4ubm9VaS1waXBzLFxuLm5vVWktcGlwcyAqIHtcbiAgLW1vei1ib3gtc2l6aW5nOiBib3JkZXItYm94O1xuICBib3gtc2l6aW5nOiBib3JkZXItYm94O1xufVxuXG4ubm9VaS1waXBzIHtcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICBjb2xvcjogIzk5OTtcbn1cblxuLyogVmFsdWVzO1xuICpcbiAqL1xuLm5vVWktdmFsdWUge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIHdoaXRlLXNwYWNlOiBub3dyYXA7XG4gIHRleHQtYWxpZ246IGNlbnRlcjtcbn1cblxuLm5vVWktdmFsdWUtc3ViIHtcbiAgY29sb3I6ICNjY2M7XG4gIGZvbnQtc2l6ZTogMTBweDtcbn1cblxuLyogTWFya2luZ3M7XG4gKlxuICovXG4ubm9VaS1tYXJrZXIge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGJhY2tncm91bmQ6ICNDQ0M7XG59XG5cbi5ub1VpLW1hcmtlci1zdWIge1xuICBiYWNrZ3JvdW5kOiAjQUFBO1xufVxuXG4ubm9VaS1tYXJrZXItbGFyZ2Uge1xuICBiYWNrZ3JvdW5kOiAjQUFBO1xufVxuXG4vKiBIb3Jpem9udGFsIGxheW91dDtcbiAqXG4gKi9cbi5ub1VpLXBpcHMtaG9yaXpvbnRhbCB7XG4gIHBhZGRpbmc6IDEwcHggMDtcbiAgaGVpZ2h0OiA4MHB4O1xuICB0b3A6IDEwMCU7XG4gIGxlZnQ6IDA7XG4gIHdpZHRoOiAxMDAlO1xufVxuXG4ubm9VaS12YWx1ZS1ob3Jpem9udGFsIHtcbiAgLXdlYmtpdC10cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCA1MCUpO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCA1MCUpO1xufVxuXG4ubm9VaS1ydGwgLm5vVWktdmFsdWUtaG9yaXpvbnRhbCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoNTAlLCA1MCUpO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSg1MCUsIDUwJSk7XG59XG5cbi5ub1VpLW1hcmtlci1ob3Jpem9udGFsLm5vVWktbWFya2VyIHtcbiAgbWFyZ2luLWxlZnQ6IC0xcHg7XG4gIHdpZHRoOiAycHg7XG4gIGhlaWdodDogNXB4O1xufVxuXG4ubm9VaS1tYXJrZXItaG9yaXpvbnRhbC5ub1VpLW1hcmtlci1zdWIge1xuICBoZWlnaHQ6IDEwcHg7XG59XG5cbi5ub1VpLW1hcmtlci1ob3Jpem9udGFsLm5vVWktbWFya2VyLWxhcmdlIHtcbiAgaGVpZ2h0OiAxNXB4O1xufVxuXG4vKiBWZXJ0aWNhbCBsYXlvdXQ7XG4gKlxuICovXG4ubm9VaS1waXBzLXZlcnRpY2FsIHtcbiAgcGFkZGluZzogMCAxMHB4O1xuICBoZWlnaHQ6IDEwMCU7XG4gIHRvcDogMDtcbiAgbGVmdDogMTAwJTtcbn1cblxuLm5vVWktdmFsdWUtdmVydGljYWwge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIC01MCUpO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCAtNTAlLCAwKTtcbiAgcGFkZGluZy1sZWZ0OiAyNXB4O1xufVxuXG4ubm9VaS1ydGwgLm5vVWktdmFsdWUtdmVydGljYWwge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDUwJSk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDUwJSk7XG59XG5cbi5ub1VpLW1hcmtlci12ZXJ0aWNhbC5ub1VpLW1hcmtlciB7XG4gIHdpZHRoOiA1cHg7XG4gIGhlaWdodDogMnB4O1xuICBtYXJnaW4tdG9wOiAtMXB4O1xufVxuXG4ubm9VaS1tYXJrZXItdmVydGljYWwubm9VaS1tYXJrZXItc3ViIHtcbiAgd2lkdGg6IDEwcHg7XG59XG5cbi5ub1VpLW1hcmtlci12ZXJ0aWNhbC5ub1VpLW1hcmtlci1sYXJnZSB7XG4gIHdpZHRoOiAxNXB4O1xufVxuXG4ubm9VaS10b29sdGlwIHtcbiAgZGlzcGxheTogYmxvY2s7XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgYm9yZGVyOiAxcHggc29saWQgI0Q5RDlEOTtcbiAgYm9yZGVyLXJhZGl1czogM3B4O1xuICBiYWNrZ3JvdW5kOiAjZmZmO1xuICBjb2xvcjogIzAwMDtcbiAgcGFkZGluZzogNXB4O1xuICB0ZXh0LWFsaWduOiBjZW50ZXI7XG4gIHdoaXRlLXNwYWNlOiBub3dyYXA7XG59XG5cbi5ub1VpLWhvcml6b250YWwgLm5vVWktdG9vbHRpcCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTUwJSwgMCk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIDApO1xuICBsZWZ0OiA1MCU7XG4gIGJvdHRvbTogMTIwJTtcbn1cblxuLm5vVWktdmVydGljYWwgLm5vVWktdG9vbHRpcCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTUwJSk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIC01MCUpO1xuICB0b3A6IDUwJTtcbiAgcmlnaHQ6IDEyMCU7XG59XG5cbm5vdWlzbGlkZXIge1xuICBkaXNwbGF5OiBpbmxpbmUtYmxvY2sgIWltcG9ydGFudDtcbiAgbWFyZ2luOiAwO1xuICB2ZXJ0aWNhbC1hbGlnbjogbWlkZGxlO1xuICB3aWR0aDogMTAwJTtcbn1cbm5vdWlzbGlkZXIgLm5vVWktaG9yaXpvbnRhbCB7XG4gIGJhY2tncm91bmQtY29sb3I6ICNlMWUxZTE7XG4gIGJvcmRlcjogMDtcbiAgYm94LXNoYWRvdzogbm9uZTtcbiAgaGVpZ2h0OiAzcHg7XG59XG5ub3Vpc2xpZGVyIC5ub1VpLWhvcml6b250YWwgLm5vVWktaGFuZGxlIHtcbiAgYm9yZGVyLWNvbG9yOiAjMzk0MjAyO1xuICBib3JkZXItcmFkaXVzOiA1MCU7XG4gIGhlaWdodDogMTVweDtcbiAgcmlnaHQ6IC0xNXB4ICFpbXBvcnRhbnQ7XG4gIHdpZHRoOiAxNXB4O1xufVxubm91aXNsaWRlciAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZTo6YmVmb3JlLCBub3Vpc2xpZGVyIC5ub1VpLWhvcml6b250YWwgLm5vVWktaGFuZGxlOjphZnRlciB7XG4gIGNvbnRlbnQ6IG5vbmU7XG59XG5ub3Vpc2xpZGVyIC5ub1VpLWhvcml6b250YWwgLm5vVWktaGFuZGxlIC5ub1VpLXRvb2x0aXAge1xuICBkaXNwbGF5OiBub25lO1xufVxubm91aXNsaWRlciAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZTpob3ZlciAubm9VaS10b29sdGlwLCBub3Vpc2xpZGVyIC5ub1VpLWhvcml6b250YWwgLm5vVWktaGFuZGxlOmFjdGl2ZSAubm9VaS10b29sdGlwIHtcbiAgZGlzcGxheTogYmxvY2s7XG59XG5ub3Vpc2xpZGVyIC5ub1VpLWJhc2Uge1xuICBoZWlnaHQ6IDNweDtcbn1cbm5vdWlzbGlkZXIgLm5vVWktY29ubmVjdCB7XG4gIGJhY2tncm91bmQtY29sb3I6ICMzOTQyMDI7XG59XG5cbiNzbWFydC10YWJsZXMgLnRhYmxlLTEtZmlsdGVycyAuZGF0ZS1pbnB1dCB7XG4gIGRpc3BsYXk6IGlubGluZTtcbn1cbiNzbWFydC10YWJsZXMgLnRhYmxlLTEtZmlsdGVycyAucmVzZXQtZGF0ZSB7XG4gIGJhY2tncm91bmQtY29sb3I6IHRyYW5zcGFyZW50O1xuICBib3JkZXI6IDA7XG4gIGRpc3BsYXk6IGlubGluZS1ibG9jaztcbiAgZm9udC1zaXplOiAyMnB4O1xuICB2ZXJ0aWNhbC1hbGlnbjogc3ViO1xufVxuI3NtYXJ0LXRhYmxlcyBub3Vpc2xpZGVyIHtcbiAgcGFkZGluZzogMTZweCAwO1xufVxuI3NtYXJ0LXRhYmxlcyAubWF0LWNlbGwge1xuICB2ZXJ0aWNhbC1hbGlnbjogbWlkZGxlO1xufVxuI3NtYXJ0LXRhYmxlcyAubWF0LWNlbGxbY2VsbC1uYW1lPXN0YXR1c11bY2VsbC12YWx1ZT1Db21wbGV0ZWRdIHtcbiAgY29sb3I6IGJsYWNrO1xufVxuI3NtYXJ0LXRhYmxlcyAubWF0LWNlbGxbY2VsbC1uYW1lPXN0YXR1c11bY2VsbC12YWx1ZT1cIkluIFByb2dyZXNzXCJdIHtcbiAgY29sb3I6ICNmOGU4MWM7XG59XG4jc21hcnQtdGFibGVzIC5tYXQtY2VsbFtjZWxsLW5hbWU9c3RhdHVzXVtjZWxsLXZhbHVlPUNhbmNlbGxlZF0ge1xuICBjb2xvcjogI2ZmMDAxZjtcbn1cbiNzbWFydC10YWJsZXMgLnBhZ2luYXRvciAubWF0LXBhZ2luYXRvci1wYWdlLXNpemUge1xuICBhbGlnbi1pdGVtczogY2VudGVyO1xufVxuI3NtYXJ0LXRhYmxlcyAucGFnaW5hdG9yIC5tYXQtcGFnaW5hdG9yLXBhZ2Utc2l6ZS1sYWJlbCB7XG4gIGNvbG9yOiBibGFjaztcbiAgZm9udC1zaXplOiAxNHB4O1xuICBtYXJnaW4tbGVmdDogMHB4O1xuICBtYXJnaW4tcmlnaHQ6IDEwcHg7XG59XG4jc21hcnQtdGFibGVzIC5wYWdpbmF0b3IgLm1hdC1wYWdpbmF0b3ItcGFnZS1zaXplLXNlbGVjdCB7XG4gIG1hcmdpbjogMHB4O1xufVxuI3NtYXJ0LXRhYmxlcyAucGFnaW5hdG9yIC5tYXQtcGFnaW5hdG9yLXBhZ2Utc2l6ZS1zZWxlY3QgLm1hdC1mb3JtLWZpZWxkLXdyYXBwZXIge1xuICBwYWRkaW5nOiAwcHg7XG4gIHRleHQtYWxpZ246IGNlbnRlcjtcbn1cbiNzbWFydC10YWJsZXMgLnBhZ2luYXRvciAubWF0LXBhZ2luYXRvci1wYWdlLXNpemUtc2VsZWN0IC5tYXQtZm9ybS1maWVsZC13cmFwcGVyIC5tYXQtZm9ybS1maWVsZC11bmRlcmxpbmUge1xuICBkaXNwbGF5OiBub25lO1xufVxuI3NtYXJ0LXRhYmxlcyAucGFnaW5hdG9yIC5tYXQtcGFnaW5hdG9yLXJhbmdlLWFjdGlvbnMge1xuICBjb2xvcjogIzM5NDIwMjtcbiAgZm9udC1zaXplOiAxNHB4O1xufVxuI3NtYXJ0LXRhYmxlcyAuZmlsdGVyLXdyYXBwZXIgLm1hdC1mb3JtLWZpZWxkIHtcbiAgZm9udC1zaXplOiAxNHB4O1xuICB3aWR0aDogMTAwJTtcbn1cbiNzbWFydC10YWJsZXMgLmZpbHRlci13cmFwcGVyIC5tYXQtZm9ybS1maWVsZC11bmRlcmxpbmUge1xuICBkaXNwbGF5OiBpbmhlcml0O1xufVxuI3NtYXJ0LXRhYmxlcyAuYnRuLWNsZWFyIHtcbiAgbWFyZ2luLWxlZnQ6IDE1cHg7XG59XG4jc21hcnQtdGFibGVzIC5yb3ctaW5wdXQge1xuICBtYXJnaW46IDE1cHggMDtcbn1cbiNzbWFydC10YWJsZXMgLmJ0biB7XG4gIGJhY2tncm91bmQtY29sb3I6ICMzYzZkMGM7XG4gIGNvbG9yOiAjZmZmO1xuICBmb250LXNpemU6IDEycHg7XG4gIGZvbnQtd2VpZ2h0OiBib2xkO1xuICBsZXR0ZXItc3BhY2luZzogMS4zcHg7XG4gIHBhZGRpbmc6IDdweCAzMHB4O1xufVxuI3NtYXJ0LXRhYmxlcyAuaW50ZXJlc3RzLXdyYXBwZXIgLm1hdC1mb3JtLWZpZWxkLXVuZGVybGluZSB7XG4gIGRpc3BsYXk6IG5vbmU7XG59XG4jc21hcnQtdGFibGVzIC5pbnRlcmVzdHMtd3JhcHBlciAuaW50ZXJlc3RzLWxpc3QgLm1hdC1jaGlwLXJlbW92ZSB7XG4gIGFsaWduLXNlbGY6IGZsZXgtc3RhcnQ7XG4gIG1hcmdpbi10b3A6IDFweDtcbn1cblxuLnRleHQtY2FyZCB7XG4gIGRpc3BsYXk6IGlubGluZS1ibG9jaztcbn1cblxuLmNhcmQtc3RhdHMgLmNhcmQtaGVhZGVyLmNhcmQtaGVhZGVyLWljb24sIC5jYXJkLXN0YXRzIC5jYXJkLWhlYWRlci5jYXJkLWhlYWRlci10ZXh0IHtcbiAgdGV4dC1hbGlnbjogbGVmdDtcbn1cbi5jYXJkLXN0YXRzIC5jYXJkLWhlYWRlciAuY2FyZC1pY29uICsgLmNhcmQtdGl0bGUsXG4uY2FyZC1zdGF0cyAuY2FyZC1oZWFkZXIgLmNhcmQtaWNvbiArIC5jYXJkLWNhdGVnb3J5IHtcbiAgcGFkZGluZy10b3A6IDEwcHg7XG4gIGZvbnQtc2l6ZTogMzBweDtcbn1cbi5jYXJkLXN0YXRzIC5jYXJkLWhlYWRlci5jYXJkLWhlYWRlci1pY29uIC5jYXJkLXRpdGxlLCAuY2FyZC1zdGF0cyAuY2FyZC1oZWFkZXIuY2FyZC1oZWFkZXItdGV4dCAuY2FyZC10aXRsZSwgLmNhcmQtc3RhdHMgLmNhcmQtaGVhZGVyLmNhcmQtaGVhZGVyLWljb24gLmNhcmQtY2F0ZWdvcnksIC5jYXJkLXN0YXRzIC5jYXJkLWhlYWRlci5jYXJkLWhlYWRlci10ZXh0IC5jYXJkLWNhdGVnb3J5IHtcbiAgbWFyZ2luOiAxMDtcbn0iLCIvKiEgbm91aXNsaWRlciAtIDExLjAuMyAtIDIwMTgtMDEtMjEgMTQ6MDQ6MDcgKi9cbi8qIEZ1bmN0aW9uYWwgc3R5bGluZztcbiAqIFRoZXNlIHN0eWxlcyBhcmUgcmVxdWlyZWQgZm9yIG5vVWlTbGlkZXIgdG8gZnVuY3Rpb24uXG4gKiBZb3UgZG9uJ3QgbmVlZCB0byBjaGFuZ2UgdGhlc2UgcnVsZXMgdG8gYXBwbHkgeW91ciBkZXNpZ24uXG4gKi9cbi5ub1VpLXRhcmdldCxcbi5ub1VpLXRhcmdldCAqIHtcbiAgLXdlYmtpdC10b3VjaC1jYWxsb3V0OiBub25lO1xuICAtd2Via2l0LXRhcC1oaWdobGlnaHQtY29sb3I6IHJnYmEoMCwgMCwgMCwgMCk7XG4gIC13ZWJraXQtdXNlci1zZWxlY3Q6IG5vbmU7XG4gIC1tcy10b3VjaC1hY3Rpb246IG5vbmU7XG4gIHRvdWNoLWFjdGlvbjogbm9uZTtcbiAgLW1zLXVzZXItc2VsZWN0OiBub25lO1xuICAtbW96LXVzZXItc2VsZWN0OiBub25lO1xuICB1c2VyLXNlbGVjdDogbm9uZTtcbiAgLW1vei1ib3gtc2l6aW5nOiBib3JkZXItYm94O1xuICBib3gtc2l6aW5nOiBib3JkZXItYm94O1xufVxuLm5vVWktdGFyZ2V0IHtcbiAgcG9zaXRpb246IHJlbGF0aXZlO1xuICBkaXJlY3Rpb246IGx0cjtcbn1cbi5ub1VpLWJhc2UsXG4ubm9VaS1jb25uZWN0cyB7XG4gIHdpZHRoOiAxMDAlO1xuICBoZWlnaHQ6IDEwMCU7XG4gIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgei1pbmRleDogMTtcbn1cbi8qIFdyYXBwZXIgZm9yIGFsbCBjb25uZWN0IGVsZW1lbnRzLlxuICovXG4ubm9VaS1jb25uZWN0cyB7XG4gIG92ZXJmbG93OiBoaWRkZW47XG4gIHotaW5kZXg6IDA7XG59XG4ubm9VaS1jb25uZWN0LFxuLm5vVWktb3JpZ2luIHtcbiAgd2lsbC1jaGFuZ2U6IHRyYW5zZm9ybTtcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICB6LWluZGV4OiAxO1xuICB0b3A6IDA7XG4gIGxlZnQ6IDA7XG4gIGhlaWdodDogMTAwJTtcbiAgd2lkdGg6IDEwMCU7XG4gIC13ZWJraXQtdHJhbnNmb3JtLW9yaWdpbjogMCAwO1xuICB0cmFuc2Zvcm0tb3JpZ2luOiAwIDA7XG59XG4vKiBPZmZzZXQgZGlyZWN0aW9uXG4gKi9cbmh0bWw6bm90KFtkaXI9XCJydGxcIl0pIC5ub1VpLWhvcml6b250YWwgLm5vVWktb3JpZ2luIHtcbiAgbGVmdDogYXV0bztcbiAgcmlnaHQ6IDA7XG59XG4vKiBHaXZlIG9yaWdpbnMgMCBoZWlnaHQvd2lkdGggc28gdGhleSBkb24ndCBpbnRlcmZlcmUgd2l0aCBjbGlja2luZyB0aGVcbiAqIGNvbm5lY3QgZWxlbWVudHMuXG4gKi9cbi5ub1VpLXZlcnRpY2FsIC5ub1VpLW9yaWdpbiB7XG4gIHdpZHRoOiAwO1xufVxuLm5vVWktaG9yaXpvbnRhbCAubm9VaS1vcmlnaW4ge1xuICBoZWlnaHQ6IDA7XG59XG4ubm9VaS1oYW5kbGUge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG59XG4ubm9VaS1zdGF0ZS10YXAgLm5vVWktY29ubmVjdCxcbi5ub1VpLXN0YXRlLXRhcCAubm9VaS1vcmlnaW4ge1xuICAtd2Via2l0LXRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjNzO1xuICB0cmFuc2l0aW9uOiB0cmFuc2Zvcm0gMC4zcztcbn1cbi5ub1VpLXN0YXRlLWRyYWcgKiB7XG4gIGN1cnNvcjogaW5oZXJpdCAhaW1wb3J0YW50O1xufVxuLyogU2xpZGVyIHNpemUgYW5kIGhhbmRsZSBwbGFjZW1lbnQ7XG4gKi9cbi5ub1VpLWhvcml6b250YWwge1xuICBoZWlnaHQ6IDE4cHg7XG59XG4ubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZSB7XG4gIHdpZHRoOiAzNHB4O1xuICBoZWlnaHQ6IDI4cHg7XG4gIGxlZnQ6IC0xN3B4O1xuICB0b3A6IC02cHg7XG59XG4ubm9VaS12ZXJ0aWNhbCB7XG4gIHdpZHRoOiAxOHB4O1xufVxuLm5vVWktdmVydGljYWwgLm5vVWktaGFuZGxlIHtcbiAgd2lkdGg6IDI4cHg7XG4gIGhlaWdodDogMzRweDtcbiAgbGVmdDogLTZweDtcbiAgdG9wOiAtMTdweDtcbn1cbmh0bWw6bm90KFtkaXI9XCJydGxcIl0pIC5ub1VpLWhvcml6b250YWwgLm5vVWktaGFuZGxlIHtcbiAgcmlnaHQ6IC0xN3B4O1xuICBsZWZ0OiBhdXRvO1xufVxuLyogU3R5bGluZztcbiAqIEdpdmluZyB0aGUgY29ubmVjdCBlbGVtZW50IGEgYm9yZGVyIHJhZGl1cyBjYXVzZXMgaXNzdWVzIHdpdGggdXNpbmcgdHJhbnNmb3JtOiBzY2FsZVxuICovXG4ubm9VaS10YXJnZXQge1xuICBiYWNrZ3JvdW5kOiAjRkFGQUZBO1xuICBib3JkZXItcmFkaXVzOiA0cHg7XG4gIGJvcmRlcjogMXB4IHNvbGlkICNEM0QzRDM7XG4gIGJveC1zaGFkb3c6IGluc2V0IDAgMXB4IDFweCAjRjBGMEYwLCAwIDNweCA2cHggLTVweCAjQkJCO1xufVxuLm5vVWktY29ubmVjdHMge1xuICBib3JkZXItcmFkaXVzOiAzcHg7XG59XG4ubm9VaS1jb25uZWN0IHtcbiAgYmFja2dyb3VuZDogIzNGQjhBRjtcbn1cbi8qIEhhbmRsZXMgYW5kIGN1cnNvcnM7XG4gKi9cbi5ub1VpLWRyYWdnYWJsZSB7XG4gIGN1cnNvcjogZXctcmVzaXplO1xufVxuLm5vVWktdmVydGljYWwgLm5vVWktZHJhZ2dhYmxlIHtcbiAgY3Vyc29yOiBucy1yZXNpemU7XG59XG4ubm9VaS1oYW5kbGUge1xuICBib3JkZXI6IDFweCBzb2xpZCAjRDlEOUQ5O1xuICBib3JkZXItcmFkaXVzOiAzcHg7XG4gIGJhY2tncm91bmQ6ICNGRkY7XG4gIGN1cnNvcjogZGVmYXVsdDtcbiAgYm94LXNoYWRvdzogaW5zZXQgMCAwIDFweCAjRkZGLCBpbnNldCAwIDFweCA3cHggI0VCRUJFQiwgMCAzcHggNnB4IC0zcHggI0JCQjtcbn1cbi5ub1VpLWFjdGl2ZSB7XG4gIGJveC1zaGFkb3c6IGluc2V0IDAgMCAxcHggI0ZGRiwgaW5zZXQgMCAxcHggN3B4ICNEREQsIDAgM3B4IDZweCAtM3B4ICNCQkI7XG59XG4vKiBIYW5kbGUgc3RyaXBlcztcbiAqL1xuLm5vVWktaGFuZGxlOmJlZm9yZSxcbi5ub1VpLWhhbmRsZTphZnRlciB7XG4gIGNvbnRlbnQ6IFwiXCI7XG4gIGRpc3BsYXk6IGJsb2NrO1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGhlaWdodDogMTRweDtcbiAgd2lkdGg6IDFweDtcbiAgYmFja2dyb3VuZDogI0U4RTdFNjtcbiAgbGVmdDogMTRweDtcbiAgdG9wOiA2cHg7XG59XG4ubm9VaS1oYW5kbGU6YWZ0ZXIge1xuICBsZWZ0OiAxN3B4O1xufVxuLm5vVWktdmVydGljYWwgLm5vVWktaGFuZGxlOmJlZm9yZSxcbi5ub1VpLXZlcnRpY2FsIC5ub1VpLWhhbmRsZTphZnRlciB7XG4gIHdpZHRoOiAxNHB4O1xuICBoZWlnaHQ6IDFweDtcbiAgbGVmdDogNnB4O1xuICB0b3A6IDE0cHg7XG59XG4ubm9VaS12ZXJ0aWNhbCAubm9VaS1oYW5kbGU6YWZ0ZXIge1xuICB0b3A6IDE3cHg7XG59XG4vKiBEaXNhYmxlZCBzdGF0ZTtcbiAqL1xuW2Rpc2FibGVkXSAubm9VaS1jb25uZWN0IHtcbiAgYmFja2dyb3VuZDogI0I4QjhCODtcbn1cbltkaXNhYmxlZF0ubm9VaS10YXJnZXQsXG5bZGlzYWJsZWRdLm5vVWktaGFuZGxlLFxuW2Rpc2FibGVkXSAubm9VaS1oYW5kbGUge1xuICBjdXJzb3I6IG5vdC1hbGxvd2VkO1xufVxuLyogQmFzZTtcbiAqXG4gKi9cbi5ub1VpLXBpcHMsXG4ubm9VaS1waXBzICoge1xuICAtbW96LWJveC1zaXppbmc6IGJvcmRlci1ib3g7XG4gIGJveC1zaXppbmc6IGJvcmRlci1ib3g7XG59XG4ubm9VaS1waXBzIHtcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICBjb2xvcjogIzk5OTtcbn1cbi8qIFZhbHVlcztcbiAqXG4gKi9cbi5ub1VpLXZhbHVlIHtcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICB3aGl0ZS1zcGFjZTogbm93cmFwO1xuICB0ZXh0LWFsaWduOiBjZW50ZXI7XG59XG4ubm9VaS12YWx1ZS1zdWIge1xuICBjb2xvcjogI2NjYztcbiAgZm9udC1zaXplOiAxMHB4O1xufVxuLyogTWFya2luZ3M7XG4gKlxuICovXG4ubm9VaS1tYXJrZXIge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGJhY2tncm91bmQ6ICNDQ0M7XG59XG4ubm9VaS1tYXJrZXItc3ViIHtcbiAgYmFja2dyb3VuZDogI0FBQTtcbn1cbi5ub1VpLW1hcmtlci1sYXJnZSB7XG4gIGJhY2tncm91bmQ6ICNBQUE7XG59XG4vKiBIb3Jpem9udGFsIGxheW91dDtcbiAqXG4gKi9cbi5ub1VpLXBpcHMtaG9yaXpvbnRhbCB7XG4gIHBhZGRpbmc6IDEwcHggMDtcbiAgaGVpZ2h0OiA4MHB4O1xuICB0b3A6IDEwMCU7XG4gIGxlZnQ6IDA7XG4gIHdpZHRoOiAxMDAlO1xufVxuLm5vVWktdmFsdWUtaG9yaXpvbnRhbCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTUwJSwgNTAlKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTUwJSwgNTAlKTtcbn1cbi5ub1VpLXJ0bCAubm9VaS12YWx1ZS1ob3Jpem9udGFsIHtcbiAgLXdlYmtpdC10cmFuc2Zvcm06IHRyYW5zbGF0ZSg1MCUsIDUwJSk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKDUwJSwgNTAlKTtcbn1cbi5ub1VpLW1hcmtlci1ob3Jpem9udGFsLm5vVWktbWFya2VyIHtcbiAgbWFyZ2luLWxlZnQ6IC0xcHg7XG4gIHdpZHRoOiAycHg7XG4gIGhlaWdodDogNXB4O1xufVxuLm5vVWktbWFya2VyLWhvcml6b250YWwubm9VaS1tYXJrZXItc3ViIHtcbiAgaGVpZ2h0OiAxMHB4O1xufVxuLm5vVWktbWFya2VyLWhvcml6b250YWwubm9VaS1tYXJrZXItbGFyZ2Uge1xuICBoZWlnaHQ6IDE1cHg7XG59XG4vKiBWZXJ0aWNhbCBsYXlvdXQ7XG4gKlxuICovXG4ubm9VaS1waXBzLXZlcnRpY2FsIHtcbiAgcGFkZGluZzogMCAxMHB4O1xuICBoZWlnaHQ6IDEwMCU7XG4gIHRvcDogMDtcbiAgbGVmdDogMTAwJTtcbn1cbi5ub1VpLXZhbHVlLXZlcnRpY2FsIHtcbiAgLXdlYmtpdC10cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCAtNTAlKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTUwJSwgMCk7XG4gIHBhZGRpbmctbGVmdDogMjVweDtcbn1cbi5ub1VpLXJ0bCAubm9VaS12YWx1ZS12ZXJ0aWNhbCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgNTAlKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgNTAlKTtcbn1cbi5ub1VpLW1hcmtlci12ZXJ0aWNhbC5ub1VpLW1hcmtlciB7XG4gIHdpZHRoOiA1cHg7XG4gIGhlaWdodDogMnB4O1xuICBtYXJnaW4tdG9wOiAtMXB4O1xufVxuLm5vVWktbWFya2VyLXZlcnRpY2FsLm5vVWktbWFya2VyLXN1YiB7XG4gIHdpZHRoOiAxMHB4O1xufVxuLm5vVWktbWFya2VyLXZlcnRpY2FsLm5vVWktbWFya2VyLWxhcmdlIHtcbiAgd2lkdGg6IDE1cHg7XG59XG4ubm9VaS10b29sdGlwIHtcbiAgZGlzcGxheTogYmxvY2s7XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgYm9yZGVyOiAxcHggc29saWQgI0Q5RDlEOTtcbiAgYm9yZGVyLXJhZGl1czogM3B4O1xuICBiYWNrZ3JvdW5kOiAjZmZmO1xuICBjb2xvcjogIzAwMDtcbiAgcGFkZGluZzogNXB4O1xuICB0ZXh0LWFsaWduOiBjZW50ZXI7XG4gIHdoaXRlLXNwYWNlOiBub3dyYXA7XG59XG4ubm9VaS1ob3Jpem9udGFsIC5ub1VpLXRvb2x0aXAge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIDApO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAwKTtcbiAgbGVmdDogNTAlO1xuICBib3R0b206IDEyMCU7XG59XG4ubm9VaS12ZXJ0aWNhbCAubm9VaS10b29sdGlwIHtcbiAgLXdlYmtpdC10cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCAtNTAlKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTUwJSk7XG4gIHRvcDogNTAlO1xuICByaWdodDogMTIwJTtcbn1cbiIsIkBpbXBvcnQgJy4vX25vdWlzbGlkZXInO1xuXG4vLyBOb1VJU2xpZGVyIG92ZXJyaWRlXG5ub3Vpc2xpZGVyIHtcbiAgZGlzcGxheTogaW5saW5lLWJsb2NrICFpbXBvcnRhbnQ7XG4gIG1hcmdpbjogMDtcbiAgdmVydGljYWwtYWxpZ246IG1pZGRsZTtcbiAgd2lkdGg6IDEwMCU7XG5cbiAgLm5vVWktaG9yaXpvbnRhbCB7XG4gICAgYmFja2dyb3VuZC1jb2xvcjogJGdyZXk0O1xuICAgIGJvcmRlcjogMDtcbiAgICBib3gtc2hhZG93OiBub25lO1xuICAgIGhlaWdodDogM3B4O1xuXG4gICAgLm5vVWktaGFuZGxlIHtcbiAgICAgIGJvcmRlci1jb2xvcjogJHB1cnBsZTtcbiAgICAgIGJvcmRlci1yYWRpdXM6IDUwJTtcbiAgICAgIGhlaWdodDogMTVweDtcbiAgICAgIHJpZ2h0OiAtMTVweCAhaW1wb3J0YW50O1xuICAgICAgd2lkdGg6IDE1cHg7XG5cbiAgICAgICY6OmJlZm9yZSxcbiAgICAgICY6OmFmdGVyIHtcbiAgICAgICAgY29udGVudDogbm9uZTtcbiAgICAgIH1cblxuICAgICAgLm5vVWktdG9vbHRpcCB7XG4gICAgICAgIGRpc3BsYXk6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgICY6aG92ZXIgLm5vVWktdG9vbHRpcCxcbiAgICAgICY6YWN0aXZlIC5ub1VpLXRvb2x0aXAge1xuICAgICAgICBkaXNwbGF5OiBibG9jaztcbiAgICAgIH1cbiAgICB9XG4gIH1cblxuICAubm9VaS1iYXNlIHtcbiAgICBoZWlnaHQ6IDNweDtcbiAgfVxuXG4gIC5ub1VpLWNvbm5lY3Qge1xuICAgIGJhY2tncm91bmQtY29sb3I6ICRwdXJwbGU7XG4gIH1cbn1cbiIsIiAgQGltcG9ydCAnLi4vLi4vLi4vLi4vc3R5bGVzL192YXJpYWJsZXMnO1xuICBAaW1wb3J0ICcuLi8uLi8uLi8uLi9zdHlsZXMvX3RhYmxlcyc7XG4gIEBpbXBvcnQgJy4uLy4uLy4uLy4uL3N0eWxlcy9fbm91aXNsaWRlci1vdmVycmlkZSc7XG5cbiAgI3NtYXJ0LXRhYmxlcyB7XG4gICAgLnRhYmxlLTEtZmlsdGVycyB7XG4gICAgICAuZGF0ZS1pbnB1dCB7XG4gICAgICAgIGRpc3BsYXk6IGlubGluZTtcbiAgICAgICBcbiAgICAgIH1cblxuICAgICAgLnJlc2V0LWRhdGUge1xuICAgICAgICBiYWNrZ3JvdW5kLWNvbG9yOiB0cmFuc3BhcmVudDtcbiAgICAgICAgYm9yZGVyOiAwO1xuICAgICAgICBkaXNwbGF5OiBpbmxpbmUtYmxvY2s7XG4gICAgICAgIGZvbnQtc2l6ZTogJGZvbnQtc2l6ZS1sZztcbiAgICAgICAgdmVydGljYWwtYWxpZ246IHN1YjtcbiAgICAgIH1cbiAgICB9XG5cbiAgICBub3Vpc2xpZGVyIHtcbiAgICAgIHBhZGRpbmc6IDE2cHggMDtcbiAgICB9XG5cbiAgICAubWF0LWNlbGwge1xuICAgICAgdmVydGljYWwtYWxpZ246IG1pZGRsZTtcblxuICAgICAgJltjZWxsLW5hbWU9J3N0YXR1cyddIHtcbiAgICAgICAgJltjZWxsLXZhbHVlPSdDb21wbGV0ZWQnXSB7XG4gICAgICAgICAgY29sb3I6IGJsYWNrO1xuICAgICAgICB9XG5cbiAgICAgICAgJltjZWxsLXZhbHVlPSdJbiBQcm9ncmVzcyddIHtcbiAgICAgICAgICBjb2xvcjogJHllbGxvdztcbiAgICAgICAgfVxuXG4gICAgICAgICZbY2VsbC12YWx1ZT0nQ2FuY2VsbGVkJ10ge1xuICAgICAgICAgIGNvbG9yOiAkcmVkO1xuICAgICAgICB9XG4gICAgICB9XG4gICAgfVxuXG4gICAgLnBhZ2luYXRvciB7XG5cbiAgICAgIC8vbWF0ZXJpYWwgcGFnaW5hdG9yXG4gICAgICAubWF0LXBhZ2luYXRvci1wYWdlLXNpemUge1xuICAgICAgICBhbGlnbi1pdGVtczogY2VudGVyO1xuICAgICAgfVxuXG4gICAgICAubWF0LXBhZ2luYXRvci1wYWdlLXNpemUtbGFiZWwge1xuICAgICAgICBjb2xvcjogYmxhY2s7XG4gICAgICAgIGZvbnQtc2l6ZTogMTRweDtcbiAgICAgICAgbWFyZ2luLWxlZnQ6IDBweDtcbiAgICAgICAgbWFyZ2luLXJpZ2h0OiAxMHB4O1xuICAgICAgfVxuXG4gICAgICAubWF0LXBhZ2luYXRvci1wYWdlLXNpemUtc2VsZWN0IHtcbiAgICAgICAgbWFyZ2luOiAwcHg7XG5cbiAgICAgICAgLm1hdC1mb3JtLWZpZWxkLXdyYXBwZXIge1xuICAgICAgICAgIHBhZGRpbmc6IDBweDtcbiAgICAgICAgICB0ZXh0LWFsaWduOiBjZW50ZXI7XG5cbiAgICAgICAgICAubWF0LWZvcm0tZmllbGQtdW5kZXJsaW5lIHtcbiAgICAgICAgICAgIGRpc3BsYXk6IG5vbmU7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC5tYXQtcGFnaW5hdG9yLXJhbmdlLWFjdGlvbnMge1xuICAgICAgICBjb2xvcjogJGdyZWVuNDtcbiAgICAgICAgZm9udC1zaXplOiAxNHB4O1xuICAgICAgfVxuICAgIH1cblxuICAgIC5maWx0ZXItd3JhcHBlciB7XG4gICAgICAubWF0LWZvcm0tZmllbGQge1xuICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIHdpZHRoOiAxMDAlO1xuICAgICAgfVxuXG4gICAgICAubWF0LWZvcm0tZmllbGQtdW5kZXJsaW5lIHtcbiAgICAgICAgZGlzcGxheTogaW5oZXJpdDtcbiAgICAgIH1cbiAgICB9XG5cbiAgICAuYnRuLWNsZWFyIHtcbiAgICAgIG1hcmdpbi1sZWZ0OiAxNXB4O1xuICAgIH1cblxuICAgIC5yb3ctaW5wdXQge1xuICAgICAgbWFyZ2luOiAxNXB4IDA7XG4gICAgfVxuXG4gICAgLmJ0biB7XG4gICAgICBiYWNrZ3JvdW5kLWNvbG9yOiAkZ3JlZW47XG4gICAgICBjb2xvcjogJHdoaXRlO1xuICAgICAgZm9udC1zaXplOiAkZm9udC1zaXplLXhzO1xuICAgICAgZm9udC13ZWlnaHQ6IGJvbGQ7XG4gICAgICBsZXR0ZXItc3BhY2luZzogJGxldHRlci1zcGFjaW5nLXh4cztcbiAgICAgIHBhZGRpbmc6IDdweCAzMHB4O1xuICAgIH1cblxuICAgIC5pbnRlcmVzdHMtd3JhcHBlciB7XG4gICAgICAubWF0LWZvcm0tZmllbGQtdW5kZXJsaW5lIHtcbiAgICAgICAgZGlzcGxheTogbm9uZTtcbiAgICAgIH1cblxuICAgICAgLmludGVyZXN0cy1saXN0IHtcbiAgICAgICAgLm1hdC1jaGlwLXJlbW92ZSB7XG4gICAgICAgICAgYWxpZ24tc2VsZjogZmxleC1zdGFydDtcbiAgICAgICAgICBtYXJnaW4tdG9wOiAxcHg7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG4gIH1cblxuICAudGV4dC1jYXJkIHtcbiAgICBkaXNwbGF5OiBpbmxpbmUtYmxvY2s7XG4gIH1cblxuICAuY2FyZC1zdGF0cyB7XG4gICAgLmNhcmQtaGVhZGVyIHtcblxuICAgICAgJi5jYXJkLWhlYWRlci1pY29uLFxuICAgICAgJi5jYXJkLWhlYWRlci10ZXh0IHtcbiAgICAgICAgdGV4dC1hbGlnbjogbGVmdDtcbiAgICAgIH1cblxuICAgICAgLmNhcmQtaWNvbisuY2FyZC10aXRsZSxcbiAgICAgIC5jYXJkLWljb24rLmNhcmQtY2F0ZWdvcnkge1xuICAgICAgICBwYWRkaW5nLXRvcDogMTBweDtcbiAgICAgICAgZm9udC1zaXplOiAzMHB4O1xuICAgICAgfVxuXG4gICAgICAmLmNhcmQtaGVhZGVyLWljb24gLmNhcmQtdGl0bGUsXG4gICAgICAmLmNhcmQtaGVhZGVyLXRleHQgLmNhcmQtdGl0bGUsXG4gICAgICAmLmNhcmQtaGVhZGVyLWljb24gLmNhcmQtY2F0ZWdvcnksXG4gICAgICAmLmNhcmQtaGVhZGVyLXRleHQgLmNhcmQtY2F0ZWdvcnkge1xuICAgICAgICBtYXJnaW46IDEwO1xuICAgICAgfVxuICAgIH1cbiAgfSJdfQ== */");
+/* harmony default export */ __webpack_exports__["default"] = (".table-wrapper .table tbody tr td, .table-wrapper ng2-smart-table table tbody tr td, ng2-smart-table .table-wrapper table tbody tr td, .table-wrapper .table thead tr td, .table-wrapper ng2-smart-table table thead tr td, ng2-smart-table .table-wrapper table thead tr td {\n  color: black;\n  font-size: 13px;\n  letter-spacing: 2.3px;\n}\n.table-wrapper .table tbody tr td .profile-pic, .table-wrapper ng2-smart-table table tbody tr td .profile-pic, ng2-smart-table .table-wrapper table tbody tr td .profile-pic, .table-wrapper .table thead tr td .profile-pic, .table-wrapper ng2-smart-table table thead tr td .profile-pic, ng2-smart-table .table-wrapper table thead tr td .profile-pic {\n  border-radius: 50%;\n  height: auto;\n  width: 30px;\n}\n.table-wrapper {\n  overflow-y: hidden;\n}\n.table-wrapper .table th, .table-wrapper ng2-smart-table table th, ng2-smart-table .table-wrapper table th {\n  padding: 15px;\n  padding-left: 6px;\n}\n.table-wrapper .table thead tr th, .table-wrapper ng2-smart-table table thead tr th, ng2-smart-table .table-wrapper table thead tr th {\n  color: black;\n  font-size: 14px;\n  font-weight: bold;\n  letter-spacing: 1.3px;\n  text-transform: uppercase;\n}\n.table-wrapper .table tbody tr, .table-wrapper ng2-smart-table table tbody tr, ng2-smart-table .table-wrapper table tbody tr {\n  height: auto;\n  cursor: pointer;\n  transition: background-color 1s;\n}\n.table-wrapper .table tbody tr:hover, .table-wrapper ng2-smart-table table tbody tr:hover, ng2-smart-table .table-wrapper table tbody tr:hover {\n  background-color: #dbdbdb !important;\n}\n.table-wrapper .table tbody tr td, .table-wrapper ng2-smart-table table tbody tr td, ng2-smart-table .table-wrapper table tbody tr td {\n  border-bottom: none;\n}\n.table-wrapper .table.table-stripes thead tr th, .table-wrapper ng2-smart-table table.table thead tr th, ng2-smart-table .table-wrapper table.table thead tr th, .table-wrapper ng2-smart-table table.table-stripes thead tr th, .table-wrapper ng2-smart-table table thead tr th, ng2-smart-table .table-wrapper table.table-stripes thead tr th, ng2-smart-table .table-wrapper table thead tr th {\n  border-bottom: none;\n}\n.table-wrapper .table.table-stripes tbody tr:nth-child(odd), .table-wrapper ng2-smart-table table tbody tr:nth-child(odd), ng2-smart-table .table-wrapper table tbody tr:nth-child(odd) {\n  background-color: #e8e8e8;\n}\n.table-wrapper .table.table-stripes tbody tr td, .table-wrapper ng2-smart-table table.table tbody tr td, ng2-smart-table .table-wrapper table.table tbody tr td, .table-wrapper ng2-smart-table table.table-stripes tbody tr td, .table-wrapper ng2-smart-table table tbody tr td, ng2-smart-table .table-wrapper table.table-stripes tbody tr td, ng2-smart-table .table-wrapper table tbody tr td {\n  border-top: none;\n}\n.table-wrapper .table.table-lines thead tr th, .table-wrapper ng2-smart-table table.table-lines thead tr th, ng2-smart-table .table-wrapper table.table-lines thead tr th {\n  border-bottom: none;\n}\n/*! nouislider - 11.0.3 - 2018-01-21 14:04:07 */\n/* Functional styling;\n * These styles are required for noUiSlider to function.\n * You don't need to change these rules to apply your design.\n */\n.noUi-target,\n.noUi-target * {\n  -webkit-touch-callout: none;\n  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n  -webkit-user-select: none;\n  touch-action: none;\n  -ms-user-select: none;\n  -moz-user-select: none;\n  user-select: none;\n  box-sizing: border-box;\n}\n.noUi-target {\n  position: relative;\n  direction: ltr;\n}\n.noUi-base,\n.noUi-connects {\n  width: 100%;\n  height: 100%;\n  position: relative;\n  z-index: 1;\n}\n/* Wrapper for all connect elements.\n */\n.noUi-connects {\n  overflow: hidden;\n  z-index: 0;\n}\n.noUi-connect,\n.noUi-origin {\n  will-change: transform;\n  position: absolute;\n  z-index: 1;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 100%;\n  transform-origin: 0 0;\n}\n/* Offset direction\n */\nhtml:not([dir=rtl]) .noUi-horizontal .noUi-origin {\n  left: auto;\n  right: 0;\n}\n/* Give origins 0 height/width so they don't interfere with clicking the\n * connect elements.\n */\n.noUi-vertical .noUi-origin {\n  width: 0;\n}\n.noUi-horizontal .noUi-origin {\n  height: 0;\n}\n.noUi-handle {\n  position: absolute;\n}\n.noUi-state-tap .noUi-connect,\n.noUi-state-tap .noUi-origin {\n  transition: transform 0.3s;\n}\n.noUi-state-drag * {\n  cursor: inherit !important;\n}\n/* Slider size and handle placement;\n */\n.noUi-horizontal {\n  height: 18px;\n}\n.noUi-horizontal .noUi-handle {\n  width: 34px;\n  height: 28px;\n  left: -17px;\n  top: -6px;\n}\n.noUi-vertical {\n  width: 18px;\n}\n.noUi-vertical .noUi-handle {\n  width: 28px;\n  height: 34px;\n  left: -6px;\n  top: -17px;\n}\nhtml:not([dir=rtl]) .noUi-horizontal .noUi-handle {\n  right: -17px;\n  left: auto;\n}\n/* Styling;\n * Giving the connect element a border radius causes issues with using transform: scale\n */\n.noUi-target {\n  background: #FAFAFA;\n  border-radius: 4px;\n  border: 1px solid #D3D3D3;\n  box-shadow: inset 0 1px 1px #F0F0F0, 0 3px 6px -5px #BBB;\n}\n.noUi-connects {\n  border-radius: 3px;\n}\n.noUi-connect {\n  background: #3FB8AF;\n}\n/* Handles and cursors;\n */\n.noUi-draggable {\n  cursor: ew-resize;\n}\n.noUi-vertical .noUi-draggable {\n  cursor: ns-resize;\n}\n.noUi-handle {\n  border: 1px solid #D9D9D9;\n  border-radius: 3px;\n  background: #FFF;\n  cursor: default;\n  box-shadow: inset 0 0 1px #FFF, inset 0 1px 7px #EBEBEB, 0 3px 6px -3px #BBB;\n}\n.noUi-active {\n  box-shadow: inset 0 0 1px #FFF, inset 0 1px 7px #DDD, 0 3px 6px -3px #BBB;\n}\n/* Handle stripes;\n */\n.noUi-handle:before,\n.noUi-handle:after {\n  content: \"\";\n  display: block;\n  position: absolute;\n  height: 14px;\n  width: 1px;\n  background: #E8E7E6;\n  left: 14px;\n  top: 6px;\n}\n.noUi-handle:after {\n  left: 17px;\n}\n.noUi-vertical .noUi-handle:before,\n.noUi-vertical .noUi-handle:after {\n  width: 14px;\n  height: 1px;\n  left: 6px;\n  top: 14px;\n}\n.noUi-vertical .noUi-handle:after {\n  top: 17px;\n}\n/* Disabled state;\n */\n[disabled] .noUi-connect {\n  background: #B8B8B8;\n}\n[disabled].noUi-target,\n[disabled].noUi-handle,\n[disabled] .noUi-handle {\n  cursor: not-allowed;\n}\n/* Base;\n *\n */\n.noUi-pips,\n.noUi-pips * {\n  box-sizing: border-box;\n}\n.noUi-pips {\n  position: absolute;\n  color: #999;\n}\n/* Values;\n *\n */\n.noUi-value {\n  position: absolute;\n  white-space: nowrap;\n  text-align: center;\n}\n.noUi-value-sub {\n  color: #ccc;\n  font-size: 10px;\n}\n/* Markings;\n *\n */\n.noUi-marker {\n  position: absolute;\n  background: #CCC;\n}\n.noUi-marker-sub {\n  background: #AAA;\n}\n.noUi-marker-large {\n  background: #AAA;\n}\n/* Horizontal layout;\n *\n */\n.noUi-pips-horizontal {\n  padding: 10px 0;\n  height: 80px;\n  top: 100%;\n  left: 0;\n  width: 100%;\n}\n.noUi-value-horizontal {\n  transform: translate(-50%, 50%);\n}\n.noUi-rtl .noUi-value-horizontal {\n  transform: translate(50%, 50%);\n}\n.noUi-marker-horizontal.noUi-marker {\n  margin-left: -1px;\n  width: 2px;\n  height: 5px;\n}\n.noUi-marker-horizontal.noUi-marker-sub {\n  height: 10px;\n}\n.noUi-marker-horizontal.noUi-marker-large {\n  height: 15px;\n}\n/* Vertical layout;\n *\n */\n.noUi-pips-vertical {\n  padding: 0 10px;\n  height: 100%;\n  top: 0;\n  left: 100%;\n}\n.noUi-value-vertical {\n  transform: translate(0, -50%, 0);\n  padding-left: 25px;\n}\n.noUi-rtl .noUi-value-vertical {\n  transform: translate(0, 50%);\n}\n.noUi-marker-vertical.noUi-marker {\n  width: 5px;\n  height: 2px;\n  margin-top: -1px;\n}\n.noUi-marker-vertical.noUi-marker-sub {\n  width: 10px;\n}\n.noUi-marker-vertical.noUi-marker-large {\n  width: 15px;\n}\n.noUi-tooltip {\n  display: block;\n  position: absolute;\n  border: 1px solid #D9D9D9;\n  border-radius: 3px;\n  background: #fff;\n  color: #000;\n  padding: 5px;\n  text-align: center;\n  white-space: nowrap;\n}\n.noUi-horizontal .noUi-tooltip {\n  transform: translate(-50%, 0);\n  left: 50%;\n  bottom: 120%;\n}\n.noUi-vertical .noUi-tooltip {\n  transform: translate(0, -50%);\n  top: 50%;\n  right: 120%;\n}\nnouislider {\n  display: inline-block !important;\n  margin: 0;\n  vertical-align: middle;\n  width: 100%;\n}\nnouislider .noUi-horizontal {\n  background-color: #e1e1e1;\n  border: 0;\n  box-shadow: none;\n  height: 3px;\n}\nnouislider .noUi-horizontal .noUi-handle {\n  border-color: #394202;\n  border-radius: 50%;\n  height: 15px;\n  right: -15px !important;\n  width: 15px;\n}\nnouislider .noUi-horizontal .noUi-handle::before, nouislider .noUi-horizontal .noUi-handle::after {\n  content: none;\n}\nnouislider .noUi-horizontal .noUi-handle .noUi-tooltip {\n  display: none;\n}\nnouislider .noUi-horizontal .noUi-handle:hover .noUi-tooltip, nouislider .noUi-horizontal .noUi-handle:active .noUi-tooltip {\n  display: block;\n}\nnouislider .noUi-base {\n  height: 3px;\n}\nnouislider .noUi-connect {\n  background-color: #394202;\n}\n#smart-tables .table-1-filters .date-input {\n  display: inline;\n}\n#smart-tables .table-1-filters .reset-date {\n  background-color: transparent;\n  border: 0;\n  display: inline-block;\n  font-size: 22px;\n  vertical-align: sub;\n}\n#smart-tables nouislider {\n  padding: 16px 0;\n}\n#smart-tables .mat-cell {\n  vertical-align: middle;\n}\n#smart-tables .mat-cell[cell-name=status][cell-value=Completed] {\n  color: black;\n}\n#smart-tables .mat-cell[cell-name=status][cell-value=\"In Progress\"] {\n  color: #f8e81c;\n}\n#smart-tables .mat-cell[cell-name=status][cell-value=Cancelled] {\n  color: #ff001f;\n}\n#smart-tables .paginator .mat-paginator-page-size {\n  align-items: center;\n}\n#smart-tables .paginator .mat-paginator-page-size-label {\n  color: black;\n  font-size: 14px;\n  margin-left: 0px;\n  margin-right: 10px;\n}\n#smart-tables .paginator .mat-paginator-page-size-select {\n  margin: 0px;\n}\n#smart-tables .paginator .mat-paginator-page-size-select .mat-form-field-wrapper {\n  padding: 0px;\n  text-align: center;\n}\n#smart-tables .paginator .mat-paginator-page-size-select .mat-form-field-wrapper .mat-form-field-underline {\n  display: none;\n}\n#smart-tables .paginator .mat-paginator-range-actions {\n  color: #394202;\n  font-size: 14px;\n}\n#smart-tables .filter-wrapper .mat-form-field {\n  font-size: 14px;\n  width: 100%;\n}\n#smart-tables .filter-wrapper .mat-form-field-underline {\n  display: inherit;\n}\n#smart-tables .btn-clear {\n  margin-left: 15px;\n}\n#smart-tables .row-input {\n  margin: 15px 0;\n}\n#smart-tables .btn {\n  background-color: #3c6d0c;\n  color: #fff;\n  font-size: 12px;\n  font-weight: bold;\n  letter-spacing: 1.3px;\n  padding: 7px 30px;\n}\n#smart-tables .interests-wrapper .mat-form-field-underline {\n  display: none;\n}\n#smart-tables .interests-wrapper .interests-list .mat-chip-remove {\n  align-self: flex-start;\n  margin-top: 1px;\n}\n.text-card {\n  display: inline-block;\n}\n.card-stats .card-header.card-header-icon, .card-stats .card-header.card-header-text {\n  text-align: left;\n}\n.card-stats .card-header .card-icon + .card-title,\n.card-stats .card-header .card-icon + .card-category {\n  padding-top: 10px;\n  font-size: 30px;\n}\n.card-stats .card-header.card-header-icon .card-title, .card-stats .card-header.card-header-text .card-title, .card-stats .card-header.card-header-icon .card-category, .card-stats .card-header.card-header-text .card-category {\n  margin: 10;\n}\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy93YWduZXJhbHZlcy9EZXNrdG9wL1Byb2pldG9zL3JhZGlvbG9naWFiYWNrMi9zcmMvYXBwL3N0eWxlcy9fdGFibGVzLnNjc3MiLCIvVXNlcnMvd2FnbmVyYWx2ZXMvRGVza3RvcC9Qcm9qZXRvcy9yYWRpb2xvZ2lhYmFjazIvc3JjL2FwcC9zdHlsZXMvX3ZhcmlhYmxlcy5zY3NzIiwic3JjL2FwcC9jb250ZW50L2V4YW1lcy9saXN0L3N0eWxlcy9saXN0LmNvbXBvbmVudC5zY3NzIiwiL1VzZXJzL3dhZ25lcmFsdmVzL0Rlc2t0b3AvUHJvamV0b3MvcmFkaW9sb2dpYWJhY2syL3NyYy9hcHAvc3R5bGVzL19ub3Vpc2xpZGVyLnNjc3MiLCIvVXNlcnMvd2FnbmVyYWx2ZXMvRGVza3RvcC9Qcm9qZXRvcy9yYWRpb2xvZ2lhYmFjazIvc3JjL2FwcC9zdHlsZXMvX25vdWlzbGlkZXItb3ZlcnJpZGUuc2NzcyIsIi9Vc2Vycy93YWduZXJhbHZlcy9EZXNrdG9wL1Byb2pldG9zL3JhZGlvbG9naWFiYWNrMi9zcmMvYXBwL2NvbnRlbnQvZXhhbWVzL2xpc3Qvc3R5bGVzL2xpc3QuY29tcG9uZW50LnNjc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUE7RUFDSSxZQUFBO0VBQ0EsZUFBQTtFQUNBLHFCQ3FFZ0I7QUNwRXBCO0FGQUk7RUFDSSxrQkFBQTtFQUNBLFlBQUE7RUFDQSxXQUFBO0FFRVI7QUZFQTtFQUNJLGtCQUFBO0FFQ0o7QUZDUTtFQUNJLGFBQUE7RUFDQSxpQkFBQTtBRUNaO0FGR2dCO0VBQ0ksWUFBQTtFQUNBLGVDOENMO0VEN0NLLGlCQUFBO0VBQ0EscUJDb0RDO0VEbkRELHlCQUFBO0FFRHBCO0FGU1k7RUFDSSxZQUFBO0VBQ0EsZUFBQTtFQUNBLCtCQUFBO0FFUGhCO0FGUWdCO0VBQ0ksb0NBQUE7QUVOcEI7QUZRZ0I7RUFFSSxtQkFBQTtBRVBwQjtBRmNvQjtFQUNJLG1CQUFBO0FFWnhCO0FGa0JvQjtFQUNJLHlCQUFBO0FFaEJ4QjtBRmtCb0I7RUFDSSxnQkFBQTtBRWhCeEI7QUZ3Qm9CO0VBQ0ksbUJBQUE7QUV0QnhCO0FDL0NBLCtDQUFBO0FBQ0E7OztFQUFBO0FBSUE7O0VBRUUsMkJBQUE7RUFDQSw2Q0FBQTtFQUNBLHlCQUFBO0VBRUEsa0JBQUE7RUFDQSxxQkFBQTtFQUNBLHNCQUFBO0VBQ0EsaUJBQUE7RUFFQSxzQkFBQTtBRGtERjtBQ2hEQTtFQUNFLGtCQUFBO0VBQ0EsY0FBQTtBRG1ERjtBQ2pEQTs7RUFFRSxXQUFBO0VBQ0EsWUFBQTtFQUNBLGtCQUFBO0VBQ0EsVUFBQTtBRG9ERjtBQ2xEQTtFQUFBO0FBRUE7RUFDRSxnQkFBQTtFQUNBLFVBQUE7QURxREY7QUNuREE7O0VBRUUsc0JBQUE7RUFDQSxrQkFBQTtFQUNBLFVBQUE7RUFDQSxNQUFBO0VBQ0EsT0FBQTtFQUNBLFlBQUE7RUFDQSxXQUFBO0VBRUEscUJBQUE7QURzREY7QUNwREE7RUFBQTtBQUVBO0VBQ0UsVUFBQTtFQUNBLFFBQUE7QUR1REY7QUNyREE7O0VBQUE7QUFHQTtFQUNFLFFBQUE7QUR3REY7QUN0REE7RUFDRSxTQUFBO0FEeURGO0FDdkRBO0VBQ0Usa0JBQUE7QUQwREY7QUN4REE7O0VBR0UsMEJBQUE7QUQyREY7QUN6REE7RUFDRSwwQkFBQTtBRDRERjtBQzFEQTtFQUFBO0FBRUE7RUFDRSxZQUFBO0FENkRGO0FDM0RBO0VBQ0UsV0FBQTtFQUNBLFlBQUE7RUFDQSxXQUFBO0VBQ0EsU0FBQTtBRDhERjtBQzVEQTtFQUNFLFdBQUE7QUQrREY7QUM3REE7RUFDRSxXQUFBO0VBQ0EsWUFBQTtFQUNBLFVBQUE7RUFDQSxVQUFBO0FEZ0VGO0FDOURBO0VBQ0UsWUFBQTtFQUNBLFVBQUE7QURpRUY7QUMvREE7O0VBQUE7QUFHQTtFQUNFLG1CQUFBO0VBQ0Esa0JBQUE7RUFDQSx5QkFBQTtFQUNBLHdEQUFBO0FEa0VGO0FDaEVBO0VBQ0Usa0JBQUE7QURtRUY7QUNqRUE7RUFDRSxtQkFBQTtBRG9FRjtBQ2xFQTtFQUFBO0FBRUE7RUFDRSxpQkFBQTtBRHFFRjtBQ25FQTtFQUNFLGlCQUFBO0FEc0VGO0FDcEVBO0VBQ0UseUJBQUE7RUFDQSxrQkFBQTtFQUNBLGdCQUFBO0VBQ0EsZUFBQTtFQUNBLDRFQUFBO0FEdUVGO0FDckVBO0VBQ0UseUVBQUE7QUR3RUY7QUN0RUE7RUFBQTtBQUVBOztFQUVFLFdBQUE7RUFDQSxjQUFBO0VBQ0Esa0JBQUE7RUFDQSxZQUFBO0VBQ0EsVUFBQTtFQUNBLG1CQUFBO0VBQ0EsVUFBQTtFQUNBLFFBQUE7QUR5RUY7QUN2RUE7RUFDRSxVQUFBO0FEMEVGO0FDeEVBOztFQUVFLFdBQUE7RUFDQSxXQUFBO0VBQ0EsU0FBQTtFQUNBLFNBQUE7QUQyRUY7QUN6RUE7RUFDRSxTQUFBO0FENEVGO0FDMUVBO0VBQUE7QUFFQTtFQUNFLG1CQUFBO0FENkVGO0FDM0VBOzs7RUFHRSxtQkFBQTtBRDhFRjtBQzVFQTs7RUFBQTtBQUdBOztFQUdFLHNCQUFBO0FEK0VGO0FDN0VBO0VBQ0Usa0JBQUE7RUFDQSxXQUFBO0FEZ0ZGO0FDOUVBOztFQUFBO0FBR0E7RUFDRSxrQkFBQTtFQUNBLG1CQUFBO0VBQ0Esa0JBQUE7QURpRkY7QUMvRUE7RUFDRSxXQUFBO0VBQ0EsZUFBQTtBRGtGRjtBQ2hGQTs7RUFBQTtBQUdBO0VBQ0Usa0JBQUE7RUFDQSxnQkFBQTtBRG1GRjtBQ2pGQTtFQUNFLGdCQUFBO0FEb0ZGO0FDbEZBO0VBQ0UsZ0JBQUE7QURxRkY7QUNuRkE7O0VBQUE7QUFHQTtFQUNFLGVBQUE7RUFDQSxZQUFBO0VBQ0EsU0FBQTtFQUNBLE9BQUE7RUFDQSxXQUFBO0FEc0ZGO0FDcEZBO0VBRUUsK0JBQUE7QUR1RkY7QUNyRkE7RUFFRSw4QkFBQTtBRHdGRjtBQ3RGQTtFQUNFLGlCQUFBO0VBQ0EsVUFBQTtFQUNBLFdBQUE7QUR5RkY7QUN2RkE7RUFDRSxZQUFBO0FEMEZGO0FDeEZBO0VBQ0UsWUFBQTtBRDJGRjtBQ3pGQTs7RUFBQTtBQUdBO0VBQ0UsZUFBQTtFQUNBLFlBQUE7RUFDQSxNQUFBO0VBQ0EsVUFBQTtBRDRGRjtBQzFGQTtFQUVFLGdDQUFBO0VBQ0Esa0JBQUE7QUQ2RkY7QUMzRkE7RUFFRSw0QkFBQTtBRDhGRjtBQzVGQTtFQUNFLFVBQUE7RUFDQSxXQUFBO0VBQ0EsZ0JBQUE7QUQrRkY7QUM3RkE7RUFDRSxXQUFBO0FEZ0dGO0FDOUZBO0VBQ0UsV0FBQTtBRGlHRjtBQy9GQTtFQUNFLGNBQUE7RUFDQSxrQkFBQTtFQUNBLHlCQUFBO0VBQ0Esa0JBQUE7RUFDQSxnQkFBQTtFQUNBLFdBQUE7RUFDQSxZQUFBO0VBQ0Esa0JBQUE7RUFDQSxtQkFBQTtBRGtHRjtBQ2hHQTtFQUVFLDZCQUFBO0VBQ0EsU0FBQTtFQUNBLFlBQUE7QURtR0Y7QUNqR0E7RUFFRSw2QkFBQTtFQUNBLFFBQUE7RUFDQSxXQUFBO0FEb0dGO0FFM1hBO0VBQ0UsZ0NBQUE7RUFDQSxTQUFBO0VBQ0Esc0JBQUE7RUFDQSxXQUFBO0FGOFhGO0FFNVhFO0VBQ0UseUJIR0k7RUdGSixTQUFBO0VBQ0EsZ0JBQUE7RUFDQSxXQUFBO0FGOFhKO0FFNVhJO0VBQ0UscUJIUkc7RUdTSCxrQkFBQTtFQUNBLFlBQUE7RUFDQSx1QkFBQTtFQUNBLFdBQUE7QUY4WE47QUU1WE07RUFFRSxhQUFBO0FGNlhSO0FFMVhNO0VBQ0UsYUFBQTtBRjRYUjtBRXpYTTtFQUVFLGNBQUE7QUYwWFI7QUVyWEU7RUFDRSxXQUFBO0FGdVhKO0FFcFhFO0VBQ0UseUJIbkNLO0FDeVpUO0FHM1pNO0VBQ0UsZUFBQTtBSDhaUjtBRzFaTTtFQUNFLDZCQUFBO0VBQ0EsU0FBQTtFQUNBLHFCQUFBO0VBQ0EsZUptRE87RUlsRFAsbUJBQUE7QUg0WlI7QUd4Wkk7RUFDRSxlQUFBO0FIMFpOO0FHdlpJO0VBQ0Usc0JBQUE7QUh5Wk47QUd0WlE7RUFDRSxZQUFBO0FId1pWO0FHclpRO0VBQ0UsY0piRDtBQ29hVDtBR3BaUTtFQUNFLGNKbkJKO0FDeWFOO0FHOVlNO0VBQ0UsbUJBQUE7QUhnWlI7QUc3WU07RUFDRSxZQUFBO0VBQ0EsZUFBQTtFQUNBLGdCQUFBO0VBQ0Esa0JBQUE7QUgrWVI7QUc1WU07RUFDRSxXQUFBO0FIOFlSO0FHNVlRO0VBQ0UsWUFBQTtFQUNBLGtCQUFBO0FIOFlWO0FHNVlVO0VBQ0UsYUFBQTtBSDhZWjtBR3pZTTtFQUNFLGNKNUNDO0VJNkNELGVBQUE7QUgyWVI7QUd0WU07RUFDRSxlQUFBO0VBQ0EsV0FBQTtBSHdZUjtBR3JZTTtFQUNFLGdCQUFBO0FIdVlSO0FHbllJO0VBQ0UsaUJBQUE7QUhxWU47QUdsWUk7RUFDRSxjQUFBO0FIb1lOO0FHallJO0VBQ0UseUJKeEVFO0VJeUVGLFdKckVFO0VJc0VGLGVKNUJTO0VJNkJULGlCQUFBO0VBQ0EscUJKdkJlO0VJd0JmLGlCQUFBO0FIbVlOO0FHL1hNO0VBQ0UsYUFBQTtBSGlZUjtBRzdYUTtFQUNFLHNCQUFBO0VBQ0EsZUFBQTtBSCtYVjtBR3pYRTtFQUNFLHFCQUFBO0FINFhKO0FHdFhNO0VBRUUsZ0JBQUE7QUh3WFI7QUdyWE07O0VBRUUsaUJBQUE7RUFDQSxlQUFBO0FIdVhSO0FHcFhNO0VBSUUsVUFBQTtBSG1YUiIsImZpbGUiOiJzcmMvYXBwL2NvbnRlbnQvZXhhbWVzL2xpc3Qvc3R5bGVzL2xpc3QuY29tcG9uZW50LnNjc3MiLCJzb3VyY2VzQ29udGVudCI6WyIldGQge1xuICAgIGNvbG9yOiBncmF5c2NhbGUoJGNvbG9yOiAjMDAwMDAwKTtcbiAgICBmb250LXNpemU6IDEzcHg7XG4gICAgbGV0dGVyLXNwYWNpbmc6ICRsZXR0ZXItc3BhY2luZy1sZztcbiAgICAucHJvZmlsZS1waWMge1xuICAgICAgICBib3JkZXItcmFkaXVzOiA1MCU7XG4gICAgICAgIGhlaWdodDogYXV0bztcbiAgICAgICAgd2lkdGg6IDMwcHg7XG4gICAgfVxufVxuXG4udGFibGUtd3JhcHBlciB7XG4gICAgb3ZlcmZsb3cteTogaGlkZGVuO1xuICAgIC50YWJsZSB7XG4gICAgICAgIHRoIHtcbiAgICAgICAgICAgIHBhZGRpbmc6IDE1cHg7XG4gICAgICAgICAgICBwYWRkaW5nLWxlZnQ6IDZweDtcbiAgICAgICAgfVxuICAgICAgICB0aGVhZCB7XG4gICAgICAgICAgICB0ciB7XG4gICAgICAgICAgICAgICAgdGgge1xuICAgICAgICAgICAgICAgICAgICBjb2xvcjogYmxhY2s7XG4gICAgICAgICAgICAgICAgICAgIGZvbnQtc2l6ZTogJGZvbnQtc2l6ZS1zbTtcbiAgICAgICAgICAgICAgICAgICAgZm9udC13ZWlnaHQ6IGJvbGQ7XG4gICAgICAgICAgICAgICAgICAgIGxldHRlci1zcGFjaW5nOiAkbGV0dGVyLXNwYWNpbmcteHhzO1xuICAgICAgICAgICAgICAgICAgICB0ZXh0LXRyYW5zZm9ybTogdXBwZXJjYXNlO1xuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICB0ZCB7XG4gICAgICAgICAgICAgICAgICAgIEBleHRlbmQgJXRkO1xuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgIH1cbiAgICAgICAgfVxuICAgICAgICB0Ym9keSB7XG4gICAgICAgICAgICB0ciB7XG4gICAgICAgICAgICAgICAgaGVpZ2h0OiBhdXRvO1xuICAgICAgICAgICAgICAgIGN1cnNvcjogcG9pbnRlcjtcbiAgICAgICAgICAgICAgICB0cmFuc2l0aW9uOiBiYWNrZ3JvdW5kLWNvbG9yIDFzO1xuICAgICAgICAgICAgICAgICY6aG92ZXIge1xuICAgICAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kLWNvbG9yOiAkZ3JleTMgIWltcG9ydGFudDtcbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgdGQge1xuICAgICAgICAgICAgICAgICAgICBAZXh0ZW5kICV0ZDtcbiAgICAgICAgICAgICAgICAgICAgYm9yZGVyLWJvdHRvbTogbm9uZTtcbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICB9XG4gICAgICAgIH1cbiAgICAgICAgJi50YWJsZS1zdHJpcGVzIHtcbiAgICAgICAgICAgIHRoZWFkIHtcbiAgICAgICAgICAgICAgICB0ciB7XG4gICAgICAgICAgICAgICAgICAgIHRoIHtcbiAgICAgICAgICAgICAgICAgICAgICAgIGJvcmRlci1ib3R0b206IG5vbmU7XG4gICAgICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICB9XG4gICAgICAgICAgICB0Ym9keSB7XG4gICAgICAgICAgICAgICAgdHIge1xuICAgICAgICAgICAgICAgICAgICAmOm50aC1jaGlsZChvZGQpIHtcbiAgICAgICAgICAgICAgICAgICAgICAgIGJhY2tncm91bmQtY29sb3I6IGdyYXlzY2FsZSgkY29sb3I6ICNlOWU3ZTcpO1xuICAgICAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgICAgIHRkIHtcbiAgICAgICAgICAgICAgICAgICAgICAgIGJvcmRlci10b3A6IG5vbmU7XG4gICAgICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICB9XG4gICAgICAgIH1cbiAgICAgICAgJi50YWJsZS1saW5lcyB7XG4gICAgICAgICAgICB0aGVhZCB7XG4gICAgICAgICAgICAgICAgdHIge1xuICAgICAgICAgICAgICAgICAgICB0aCB7XG4gICAgICAgICAgICAgICAgICAgICAgICBib3JkZXItYm90dG9tOiBub25lO1xuICAgICAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgfVxuICAgICAgICB9XG4gICAgfVxufVxuXG5uZzItc21hcnQtdGFibGUge1xuICAgIHRhYmxlIHtcbiAgICAgICAgQGV4dGVuZCAudGFibGU7XG4gICAgICAgIEBleHRlbmQgLnRhYmxlLXN0cmlwZXM7XG4gICAgfVxufSIsIi8vIENvbG9yc1xuJHZpb2xldDogIzRlMDE5MjtcbiRwaW5rOiAjZmY4N2YzO1xuJHBpbmsyOiAjMjA4ZjMyO1xuJHBpbmszOiAjZjJlM2ZmO1xuJGJlaWdlOiAjZjRmM2VmO1xuJGJlaWdlMjogI2ZmZjNmNDtcbiRhcXVhOiAjNTBlM2MyO1xuJHB1cnBsZTogIzM5NDIwMjtcbiRwdXJwbGUyOiAjMWI4MzIzO1xuJGdyZXk6ICM5YjliOWI7XG4kZ3JleTI6ICNmNmY2ZjY7XG4kZ3JleTM6ICNkYmRiZGI7XG4kZ3JleTQ6ICNlMWUxZTE7XG4kZ3JleTU6ICM1NTU7XG4kZ3JleTY6ICNmNGYzZWY7XG4kZ3JleTc6ICNmMGYwZjA7XG4kZ3JleTg6ICM0YTRhNGE7XG4kcmVkOiAjZmYwMDFmO1xuJHJlZDI6ICNkMDAxMWI7XG4keWVsbG93OiAjZjhlODFjO1xuJG9yYW5nZTogI2Y2YTYyMztcbiRvcmFuZ2UyOiAjZjVhNjIzO1xuJGdyZWVuOiAjM2M2ZDBjO1xuJGdyZWVuMjogIzdkZDMyMTljO1xuJGdyZWVuMzogIzdjOTEwOTtcbiRncmVlbjQ6ICMzOTQyMDI7XG4kd2hpdGU6ICNmZmY7XG4kYmxhY2s6ICMwMDA7XG4kYmx1ZTogIzI2MDRhZjtcbiRibHVlLWZiOiAjM2I1OTk4O1xuJHNreWJsdWU6ICMwNGFiZmY7XG5cblxuJGJvZHktYmctY29sb3I6ICRiZWlnZTtcblxuJG5hdi1iZy10b3AtY29sb3I6ICRncmVlbjtcbiRuYXYtYmctYnRtLWNvbG9yOiAkZ3JlZW47XG5cbiRpbmFjdGl2ZS1iZy1jb2xvcjogJGdyZXkzO1xuXG4kY2FyZC1iZy1jb2xvcjogJHdoaXRlO1xuJGNhcmQtdHh0LWNvbG9yOiAkZ3JlZW40O1xuXG4kZm9ybS1sYWJlbC1iaWctY29sb3I6ICRncmVlbjQ7XG4kZm9ybS1sYWJlbC1jb2xvcjogJGdyZXk7XG4kZm9ybS1pbnB1dC1jb2xvcjogJGdyZXk4O1xuJGZvcm0taW5wdXQtYnJvZGVyLWNvbG9yOiAkZ3JleTQ7XG4kZm9ybS1pbnB1dC1icm9kZXItcmFkaXVzOiA0cHg7XG4kZm9ybS1jaGVja2JveC1yYWRpby1jb2xvcjogJGdyZWVuMjtcbiRmb3JtLWVycm9yLWNvbG9yOiAkcmVkMjtcbiRmb3JtLWVycm9yLWJrZy1jb2xvcjogJGJlaWdlMjtcbiRmb3JtLXRhZy1jb2xvcjogJGdyZWVuO1xuJGZvcm0tc2xpZGVyLWNvbG9yOiAkZ3JlZW47XG5cbiRzaGFkb3c6IDAgMnB4IDlweCAwIHJnYmEoMCwgMCwgMCwgLjA2KTtcbiRzaGFkb3ctaG92ZXI6IDAgMnB4IDlweCAwIHJnYmEoMCwgMCwgMCwgLjUpO1xuJHNoYWRvdy1jb250YWluZXI6IDAgMnB4IDRweCAwIHJnYmEoMCwgMCwgMCwgLjMyKTtcbiRzaGFkb3ctaW5zZXQ6IGluc2V0IDAgMCAxNXB4IDAgcmdiYSgwLCAwLCAwLCAuMik7XG5cbi8vIFRleHRzXG4kZm9udC1mYW1pbHk6ICdMYXRvJywgJ0hlbHZldGljYScsIHNhbnMtc2VyaWY7XG5cbiRmb250LXNpemUteHh4bGc6IDU3cHg7XG4kZm9udC1zaXplLXh4bGc6IDQwcHg7XG4kZm9udC1zaXplLXhsZzogMzJweDtcbiRmb250LXNpemUtbGc6IDIycHg7XG4kZm9udC1zaXplLW1kOiAxN3B4O1xuJGZvbnQtc2l6ZS1zbTogMTRweDtcbiRmb250LXNpemUteHM6IDEycHg7XG4kZm9udC1zaXplLXh4czogOXB4O1xuXG4kbGV0dGVyLXNwYWNpbmctbGc6IDIuM3B4O1xuJGxldHRlci1zcGFjaW5nLW1kOiAyLjFweDtcbiRsZXR0ZXItc3BhY2luZy1zbTogMS44cHg7XG4kbGV0dGVyLXNwYWNpbmcteHM6IDEuNXB4O1xuJGxldHRlci1zcGFjaW5nLXh4czogMS4zcHg7XG4kbGV0dGVyLXNwYWNpbmcteHh4czogMS4xcHg7XG5cbi8vIE1lYXN1cmVzXG4kY2hlY2tib3gtcmFkaW8tc2l6ZTogMTJweDtcbiRpbnB1dC1oZWlnaHQ6IDM4cHg7XG4kc2VwYXJhdGlvbjogMTVweDtcbiRzaWRlLW1lbnUtd2lkdGg6IDI2MHB4O1xuJHRvcC1uYXZiYXItYnJlYWtwb2ludDogOTEwcHg7XG5cbi8vIEltYWdlcyAtIFByZWxvYWQgaW1hZ2VzXG4kcHJlbG9hZC1pbWFnZS1iZzogcmdiYShkYXJrZW4oJHdoaXRlLCAxMCksIC4yNSk7XG5cbi8vIEltYWdlcyAtIFByZWxvYWQgaW1hZ2VzIC0gU3Bpbm5lciBvbiBsb2FkXG4kc3Bpbm5lci1zaXplOiAyOHB4O1xuJHNwaW5uZXItY29sb3I6ICRncmV5O1xuIiwiLnRhYmxlLXdyYXBwZXIgLnRhYmxlIHRib2R5IHRyIHRkLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGJvZHkgdHIgdGQsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0Ym9keSB0ciB0ZCwgLnRhYmxlLXdyYXBwZXIgLnRhYmxlIHRoZWFkIHRyIHRkLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGhlYWQgdHIgdGQsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0aGVhZCB0ciB0ZCB7XG4gIGNvbG9yOiBibGFjaztcbiAgZm9udC1zaXplOiAxM3B4O1xuICBsZXR0ZXItc3BhY2luZzogMi4zcHg7XG59XG4udGFibGUtd3JhcHBlciAudGFibGUgdGJvZHkgdHIgdGQgLnByb2ZpbGUtcGljLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGJvZHkgdHIgdGQgLnByb2ZpbGUtcGljLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGJvZHkgdHIgdGQgLnByb2ZpbGUtcGljLCAudGFibGUtd3JhcHBlciAudGFibGUgdGhlYWQgdHIgdGQgLnByb2ZpbGUtcGljLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUgdGhlYWQgdHIgdGQgLnByb2ZpbGUtcGljLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGhlYWQgdHIgdGQgLnByb2ZpbGUtcGljIHtcbiAgYm9yZGVyLXJhZGl1czogNTAlO1xuICBoZWlnaHQ6IGF1dG87XG4gIHdpZHRoOiAzMHB4O1xufVxuXG4udGFibGUtd3JhcHBlciB7XG4gIG92ZXJmbG93LXk6IGhpZGRlbjtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZSB0aCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRoLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGgge1xuICBwYWRkaW5nOiAxNXB4O1xuICBwYWRkaW5nLWxlZnQ6IDZweDtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZSB0aGVhZCB0ciB0aCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRoZWFkIHRyIHRoLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGhlYWQgdHIgdGgge1xuICBjb2xvcjogYmxhY2s7XG4gIGZvbnQtc2l6ZTogMTRweDtcbiAgZm9udC13ZWlnaHQ6IGJvbGQ7XG4gIGxldHRlci1zcGFjaW5nOiAxLjNweDtcbiAgdGV4dC10cmFuc2Zvcm06IHVwcGVyY2FzZTtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZSB0Ym9keSB0ciwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRib2R5IHRyLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGJvZHkgdHIge1xuICBoZWlnaHQ6IGF1dG87XG4gIGN1cnNvcjogcG9pbnRlcjtcbiAgdHJhbnNpdGlvbjogYmFja2dyb3VuZC1jb2xvciAxcztcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZSB0Ym9keSB0cjpob3ZlciwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRib2R5IHRyOmhvdmVyLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGJvZHkgdHI6aG92ZXIge1xuICBiYWNrZ3JvdW5kLWNvbG9yOiAjZGJkYmRiICFpbXBvcnRhbnQ7XG59XG4udGFibGUtd3JhcHBlciAudGFibGUgdGJvZHkgdHIgdGQsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZSB0Ym9keSB0ciB0ZCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlIHRib2R5IHRyIHRkIHtcbiAgYm9yZGVyLWJvdHRvbTogbm9uZTtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZS50YWJsZS1zdHJpcGVzIHRoZWFkIHRyIHRoLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUudGFibGUgdGhlYWQgdHIgdGgsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZS50YWJsZSB0aGVhZCB0ciB0aCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlLnRhYmxlLXN0cmlwZXMgdGhlYWQgdHIgdGgsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZSB0aGVhZCB0ciB0aCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlLnRhYmxlLXN0cmlwZXMgdGhlYWQgdHIgdGgsIG5nMi1zbWFydC10YWJsZSAudGFibGUtd3JhcHBlciB0YWJsZSB0aGVhZCB0ciB0aCB7XG4gIGJvcmRlci1ib3R0b206IG5vbmU7XG59XG4udGFibGUtd3JhcHBlciAudGFibGUudGFibGUtc3RyaXBlcyB0Ym9keSB0cjpudGgtY2hpbGQob2RkKSwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRib2R5IHRyOm50aC1jaGlsZChvZGQpLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUgdGJvZHkgdHI6bnRoLWNoaWxkKG9kZCkge1xuICBiYWNrZ3JvdW5kLWNvbG9yOiAjZThlOGU4O1xufVxuLnRhYmxlLXdyYXBwZXIgLnRhYmxlLnRhYmxlLXN0cmlwZXMgdGJvZHkgdHIgdGQsIC50YWJsZS13cmFwcGVyIG5nMi1zbWFydC10YWJsZSB0YWJsZS50YWJsZSB0Ym9keSB0ciB0ZCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlLnRhYmxlIHRib2R5IHRyIHRkLCAudGFibGUtd3JhcHBlciBuZzItc21hcnQtdGFibGUgdGFibGUudGFibGUtc3RyaXBlcyB0Ym9keSB0ciB0ZCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlIHRib2R5IHRyIHRkLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUudGFibGUtc3RyaXBlcyB0Ym9keSB0ciB0ZCwgbmcyLXNtYXJ0LXRhYmxlIC50YWJsZS13cmFwcGVyIHRhYmxlIHRib2R5IHRyIHRkIHtcbiAgYm9yZGVyLXRvcDogbm9uZTtcbn1cbi50YWJsZS13cmFwcGVyIC50YWJsZS50YWJsZS1saW5lcyB0aGVhZCB0ciB0aCwgLnRhYmxlLXdyYXBwZXIgbmcyLXNtYXJ0LXRhYmxlIHRhYmxlLnRhYmxlLWxpbmVzIHRoZWFkIHRyIHRoLCBuZzItc21hcnQtdGFibGUgLnRhYmxlLXdyYXBwZXIgdGFibGUudGFibGUtbGluZXMgdGhlYWQgdHIgdGgge1xuICBib3JkZXItYm90dG9tOiBub25lO1xufVxuXG4vKiEgbm91aXNsaWRlciAtIDExLjAuMyAtIDIwMTgtMDEtMjEgMTQ6MDQ6MDcgKi9cbi8qIEZ1bmN0aW9uYWwgc3R5bGluZztcbiAqIFRoZXNlIHN0eWxlcyBhcmUgcmVxdWlyZWQgZm9yIG5vVWlTbGlkZXIgdG8gZnVuY3Rpb24uXG4gKiBZb3UgZG9uJ3QgbmVlZCB0byBjaGFuZ2UgdGhlc2UgcnVsZXMgdG8gYXBwbHkgeW91ciBkZXNpZ24uXG4gKi9cbi5ub1VpLXRhcmdldCxcbi5ub1VpLXRhcmdldCAqIHtcbiAgLXdlYmtpdC10b3VjaC1jYWxsb3V0OiBub25lO1xuICAtd2Via2l0LXRhcC1oaWdobGlnaHQtY29sb3I6IHJnYmEoMCwgMCwgMCwgMCk7XG4gIC13ZWJraXQtdXNlci1zZWxlY3Q6IG5vbmU7XG4gIC1tcy10b3VjaC1hY3Rpb246IG5vbmU7XG4gIHRvdWNoLWFjdGlvbjogbm9uZTtcbiAgLW1zLXVzZXItc2VsZWN0OiBub25lO1xuICAtbW96LXVzZXItc2VsZWN0OiBub25lO1xuICB1c2VyLXNlbGVjdDogbm9uZTtcbiAgLW1vei1ib3gtc2l6aW5nOiBib3JkZXItYm94O1xuICBib3gtc2l6aW5nOiBib3JkZXItYm94O1xufVxuXG4ubm9VaS10YXJnZXQge1xuICBwb3NpdGlvbjogcmVsYXRpdmU7XG4gIGRpcmVjdGlvbjogbHRyO1xufVxuXG4ubm9VaS1iYXNlLFxuLm5vVWktY29ubmVjdHMge1xuICB3aWR0aDogMTAwJTtcbiAgaGVpZ2h0OiAxMDAlO1xuICBwb3NpdGlvbjogcmVsYXRpdmU7XG4gIHotaW5kZXg6IDE7XG59XG5cbi8qIFdyYXBwZXIgZm9yIGFsbCBjb25uZWN0IGVsZW1lbnRzLlxuICovXG4ubm9VaS1jb25uZWN0cyB7XG4gIG92ZXJmbG93OiBoaWRkZW47XG4gIHotaW5kZXg6IDA7XG59XG5cbi5ub1VpLWNvbm5lY3QsXG4ubm9VaS1vcmlnaW4ge1xuICB3aWxsLWNoYW5nZTogdHJhbnNmb3JtO1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIHotaW5kZXg6IDE7XG4gIHRvcDogMDtcbiAgbGVmdDogMDtcbiAgaGVpZ2h0OiAxMDAlO1xuICB3aWR0aDogMTAwJTtcbiAgLXdlYmtpdC10cmFuc2Zvcm0tb3JpZ2luOiAwIDA7XG4gIHRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbn1cblxuLyogT2Zmc2V0IGRpcmVjdGlvblxuICovXG5odG1sOm5vdChbZGlyPXJ0bF0pIC5ub1VpLWhvcml6b250YWwgLm5vVWktb3JpZ2luIHtcbiAgbGVmdDogYXV0bztcbiAgcmlnaHQ6IDA7XG59XG5cbi8qIEdpdmUgb3JpZ2lucyAwIGhlaWdodC93aWR0aCBzbyB0aGV5IGRvbid0IGludGVyZmVyZSB3aXRoIGNsaWNraW5nIHRoZVxuICogY29ubmVjdCBlbGVtZW50cy5cbiAqL1xuLm5vVWktdmVydGljYWwgLm5vVWktb3JpZ2luIHtcbiAgd2lkdGg6IDA7XG59XG5cbi5ub1VpLWhvcml6b250YWwgLm5vVWktb3JpZ2luIHtcbiAgaGVpZ2h0OiAwO1xufVxuXG4ubm9VaS1oYW5kbGUge1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG59XG5cbi5ub1VpLXN0YXRlLXRhcCAubm9VaS1jb25uZWN0LFxuLm5vVWktc3RhdGUtdGFwIC5ub1VpLW9yaWdpbiB7XG4gIC13ZWJraXQtdHJhbnNpdGlvbjogdHJhbnNmb3JtIDAuM3M7XG4gIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjNzO1xufVxuXG4ubm9VaS1zdGF0ZS1kcmFnICoge1xuICBjdXJzb3I6IGluaGVyaXQgIWltcG9ydGFudDtcbn1cblxuLyogU2xpZGVyIHNpemUgYW5kIGhhbmRsZSBwbGFjZW1lbnQ7XG4gKi9cbi5ub1VpLWhvcml6b250YWwge1xuICBoZWlnaHQ6IDE4cHg7XG59XG5cbi5ub1VpLWhvcml6b250YWwgLm5vVWktaGFuZGxlIHtcbiAgd2lkdGg6IDM0cHg7XG4gIGhlaWdodDogMjhweDtcbiAgbGVmdDogLTE3cHg7XG4gIHRvcDogLTZweDtcbn1cblxuLm5vVWktdmVydGljYWwge1xuICB3aWR0aDogMThweDtcbn1cblxuLm5vVWktdmVydGljYWwgLm5vVWktaGFuZGxlIHtcbiAgd2lkdGg6IDI4cHg7XG4gIGhlaWdodDogMzRweDtcbiAgbGVmdDogLTZweDtcbiAgdG9wOiAtMTdweDtcbn1cblxuaHRtbDpub3QoW2Rpcj1ydGxdKSAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZSB7XG4gIHJpZ2h0OiAtMTdweDtcbiAgbGVmdDogYXV0bztcbn1cblxuLyogU3R5bGluZztcbiAqIEdpdmluZyB0aGUgY29ubmVjdCBlbGVtZW50IGEgYm9yZGVyIHJhZGl1cyBjYXVzZXMgaXNzdWVzIHdpdGggdXNpbmcgdHJhbnNmb3JtOiBzY2FsZVxuICovXG4ubm9VaS10YXJnZXQge1xuICBiYWNrZ3JvdW5kOiAjRkFGQUZBO1xuICBib3JkZXItcmFkaXVzOiA0cHg7XG4gIGJvcmRlcjogMXB4IHNvbGlkICNEM0QzRDM7XG4gIGJveC1zaGFkb3c6IGluc2V0IDAgMXB4IDFweCAjRjBGMEYwLCAwIDNweCA2cHggLTVweCAjQkJCO1xufVxuXG4ubm9VaS1jb25uZWN0cyB7XG4gIGJvcmRlci1yYWRpdXM6IDNweDtcbn1cblxuLm5vVWktY29ubmVjdCB7XG4gIGJhY2tncm91bmQ6ICMzRkI4QUY7XG59XG5cbi8qIEhhbmRsZXMgYW5kIGN1cnNvcnM7XG4gKi9cbi5ub1VpLWRyYWdnYWJsZSB7XG4gIGN1cnNvcjogZXctcmVzaXplO1xufVxuXG4ubm9VaS12ZXJ0aWNhbCAubm9VaS1kcmFnZ2FibGUge1xuICBjdXJzb3I6IG5zLXJlc2l6ZTtcbn1cblxuLm5vVWktaGFuZGxlIHtcbiAgYm9yZGVyOiAxcHggc29saWQgI0Q5RDlEOTtcbiAgYm9yZGVyLXJhZGl1czogM3B4O1xuICBiYWNrZ3JvdW5kOiAjRkZGO1xuICBjdXJzb3I6IGRlZmF1bHQ7XG4gIGJveC1zaGFkb3c6IGluc2V0IDAgMCAxcHggI0ZGRiwgaW5zZXQgMCAxcHggN3B4ICNFQkVCRUIsIDAgM3B4IDZweCAtM3B4ICNCQkI7XG59XG5cbi5ub1VpLWFjdGl2ZSB7XG4gIGJveC1zaGFkb3c6IGluc2V0IDAgMCAxcHggI0ZGRiwgaW5zZXQgMCAxcHggN3B4ICNEREQsIDAgM3B4IDZweCAtM3B4ICNCQkI7XG59XG5cbi8qIEhhbmRsZSBzdHJpcGVzO1xuICovXG4ubm9VaS1oYW5kbGU6YmVmb3JlLFxuLm5vVWktaGFuZGxlOmFmdGVyIHtcbiAgY29udGVudDogXCJcIjtcbiAgZGlzcGxheTogYmxvY2s7XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgaGVpZ2h0OiAxNHB4O1xuICB3aWR0aDogMXB4O1xuICBiYWNrZ3JvdW5kOiAjRThFN0U2O1xuICBsZWZ0OiAxNHB4O1xuICB0b3A6IDZweDtcbn1cblxuLm5vVWktaGFuZGxlOmFmdGVyIHtcbiAgbGVmdDogMTdweDtcbn1cblxuLm5vVWktdmVydGljYWwgLm5vVWktaGFuZGxlOmJlZm9yZSxcbi5ub1VpLXZlcnRpY2FsIC5ub1VpLWhhbmRsZTphZnRlciB7XG4gIHdpZHRoOiAxNHB4O1xuICBoZWlnaHQ6IDFweDtcbiAgbGVmdDogNnB4O1xuICB0b3A6IDE0cHg7XG59XG5cbi5ub1VpLXZlcnRpY2FsIC5ub1VpLWhhbmRsZTphZnRlciB7XG4gIHRvcDogMTdweDtcbn1cblxuLyogRGlzYWJsZWQgc3RhdGU7XG4gKi9cbltkaXNhYmxlZF0gLm5vVWktY29ubmVjdCB7XG4gIGJhY2tncm91bmQ6ICNCOEI4Qjg7XG59XG5cbltkaXNhYmxlZF0ubm9VaS10YXJnZXQsXG5bZGlzYWJsZWRdLm5vVWktaGFuZGxlLFxuW2Rpc2FibGVkXSAubm9VaS1oYW5kbGUge1xuICBjdXJzb3I6IG5vdC1hbGxvd2VkO1xufVxuXG4vKiBCYXNlO1xuICpcbiAqL1xuLm5vVWktcGlwcyxcbi5ub1VpLXBpcHMgKiB7XG4gIC1tb3otYm94LXNpemluZzogYm9yZGVyLWJveDtcbiAgYm94LXNpemluZzogYm9yZGVyLWJveDtcbn1cblxuLm5vVWktcGlwcyB7XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgY29sb3I6ICM5OTk7XG59XG5cbi8qIFZhbHVlcztcbiAqXG4gKi9cbi5ub1VpLXZhbHVlIHtcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICB3aGl0ZS1zcGFjZTogbm93cmFwO1xuICB0ZXh0LWFsaWduOiBjZW50ZXI7XG59XG5cbi5ub1VpLXZhbHVlLXN1YiB7XG4gIGNvbG9yOiAjY2NjO1xuICBmb250LXNpemU6IDEwcHg7XG59XG5cbi8qIE1hcmtpbmdzO1xuICpcbiAqL1xuLm5vVWktbWFya2VyIHtcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICBiYWNrZ3JvdW5kOiAjQ0NDO1xufVxuXG4ubm9VaS1tYXJrZXItc3ViIHtcbiAgYmFja2dyb3VuZDogI0FBQTtcbn1cblxuLm5vVWktbWFya2VyLWxhcmdlIHtcbiAgYmFja2dyb3VuZDogI0FBQTtcbn1cblxuLyogSG9yaXpvbnRhbCBsYXlvdXQ7XG4gKlxuICovXG4ubm9VaS1waXBzLWhvcml6b250YWwge1xuICBwYWRkaW5nOiAxMHB4IDA7XG4gIGhlaWdodDogODBweDtcbiAgdG9wOiAxMDAlO1xuICBsZWZ0OiAwO1xuICB3aWR0aDogMTAwJTtcbn1cblxuLm5vVWktdmFsdWUtaG9yaXpvbnRhbCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTUwJSwgNTAlKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTUwJSwgNTAlKTtcbn1cblxuLm5vVWktcnRsIC5ub1VpLXZhbHVlLWhvcml6b250YWwge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKDUwJSwgNTAlKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoNTAlLCA1MCUpO1xufVxuXG4ubm9VaS1tYXJrZXItaG9yaXpvbnRhbC5ub1VpLW1hcmtlciB7XG4gIG1hcmdpbi1sZWZ0OiAtMXB4O1xuICB3aWR0aDogMnB4O1xuICBoZWlnaHQ6IDVweDtcbn1cblxuLm5vVWktbWFya2VyLWhvcml6b250YWwubm9VaS1tYXJrZXItc3ViIHtcbiAgaGVpZ2h0OiAxMHB4O1xufVxuXG4ubm9VaS1tYXJrZXItaG9yaXpvbnRhbC5ub1VpLW1hcmtlci1sYXJnZSB7XG4gIGhlaWdodDogMTVweDtcbn1cblxuLyogVmVydGljYWwgbGF5b3V0O1xuICpcbiAqL1xuLm5vVWktcGlwcy12ZXJ0aWNhbCB7XG4gIHBhZGRpbmc6IDAgMTBweDtcbiAgaGVpZ2h0OiAxMDAlO1xuICB0b3A6IDA7XG4gIGxlZnQ6IDEwMCU7XG59XG5cbi5ub1VpLXZhbHVlLXZlcnRpY2FsIHtcbiAgLXdlYmtpdC10cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCAtNTAlKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTUwJSwgMCk7XG4gIHBhZGRpbmctbGVmdDogMjVweDtcbn1cblxuLm5vVWktcnRsIC5ub1VpLXZhbHVlLXZlcnRpY2FsIHtcbiAgLXdlYmtpdC10cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCA1MCUpO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCA1MCUpO1xufVxuXG4ubm9VaS1tYXJrZXItdmVydGljYWwubm9VaS1tYXJrZXIge1xuICB3aWR0aDogNXB4O1xuICBoZWlnaHQ6IDJweDtcbiAgbWFyZ2luLXRvcDogLTFweDtcbn1cblxuLm5vVWktbWFya2VyLXZlcnRpY2FsLm5vVWktbWFya2VyLXN1YiB7XG4gIHdpZHRoOiAxMHB4O1xufVxuXG4ubm9VaS1tYXJrZXItdmVydGljYWwubm9VaS1tYXJrZXItbGFyZ2Uge1xuICB3aWR0aDogMTVweDtcbn1cblxuLm5vVWktdG9vbHRpcCB7XG4gIGRpc3BsYXk6IGJsb2NrO1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGJvcmRlcjogMXB4IHNvbGlkICNEOUQ5RDk7XG4gIGJvcmRlci1yYWRpdXM6IDNweDtcbiAgYmFja2dyb3VuZDogI2ZmZjtcbiAgY29sb3I6ICMwMDA7XG4gIHBhZGRpbmc6IDVweDtcbiAgdGV4dC1hbGlnbjogY2VudGVyO1xuICB3aGl0ZS1zcGFjZTogbm93cmFwO1xufVxuXG4ubm9VaS1ob3Jpem9udGFsIC5ub1VpLXRvb2x0aXAge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIDApO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAwKTtcbiAgbGVmdDogNTAlO1xuICBib3R0b206IDEyMCU7XG59XG5cbi5ub1VpLXZlcnRpY2FsIC5ub1VpLXRvb2x0aXAge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIC01MCUpO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCAtNTAlKTtcbiAgdG9wOiA1MCU7XG4gIHJpZ2h0OiAxMjAlO1xufVxuXG5ub3Vpc2xpZGVyIHtcbiAgZGlzcGxheTogaW5saW5lLWJsb2NrICFpbXBvcnRhbnQ7XG4gIG1hcmdpbjogMDtcbiAgdmVydGljYWwtYWxpZ246IG1pZGRsZTtcbiAgd2lkdGg6IDEwMCU7XG59XG5ub3Vpc2xpZGVyIC5ub1VpLWhvcml6b250YWwge1xuICBiYWNrZ3JvdW5kLWNvbG9yOiAjZTFlMWUxO1xuICBib3JkZXI6IDA7XG4gIGJveC1zaGFkb3c6IG5vbmU7XG4gIGhlaWdodDogM3B4O1xufVxubm91aXNsaWRlciAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZSB7XG4gIGJvcmRlci1jb2xvcjogIzM5NDIwMjtcbiAgYm9yZGVyLXJhZGl1czogNTAlO1xuICBoZWlnaHQ6IDE1cHg7XG4gIHJpZ2h0OiAtMTVweCAhaW1wb3J0YW50O1xuICB3aWR0aDogMTVweDtcbn1cbm5vdWlzbGlkZXIgLm5vVWktaG9yaXpvbnRhbCAubm9VaS1oYW5kbGU6OmJlZm9yZSwgbm91aXNsaWRlciAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZTo6YWZ0ZXIge1xuICBjb250ZW50OiBub25lO1xufVxubm91aXNsaWRlciAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZSAubm9VaS10b29sdGlwIHtcbiAgZGlzcGxheTogbm9uZTtcbn1cbm5vdWlzbGlkZXIgLm5vVWktaG9yaXpvbnRhbCAubm9VaS1oYW5kbGU6aG92ZXIgLm5vVWktdG9vbHRpcCwgbm91aXNsaWRlciAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZTphY3RpdmUgLm5vVWktdG9vbHRpcCB7XG4gIGRpc3BsYXk6IGJsb2NrO1xufVxubm91aXNsaWRlciAubm9VaS1iYXNlIHtcbiAgaGVpZ2h0OiAzcHg7XG59XG5ub3Vpc2xpZGVyIC5ub1VpLWNvbm5lY3Qge1xuICBiYWNrZ3JvdW5kLWNvbG9yOiAjMzk0MjAyO1xufVxuXG4jc21hcnQtdGFibGVzIC50YWJsZS0xLWZpbHRlcnMgLmRhdGUtaW5wdXQge1xuICBkaXNwbGF5OiBpbmxpbmU7XG59XG4jc21hcnQtdGFibGVzIC50YWJsZS0xLWZpbHRlcnMgLnJlc2V0LWRhdGUge1xuICBiYWNrZ3JvdW5kLWNvbG9yOiB0cmFuc3BhcmVudDtcbiAgYm9yZGVyOiAwO1xuICBkaXNwbGF5OiBpbmxpbmUtYmxvY2s7XG4gIGZvbnQtc2l6ZTogMjJweDtcbiAgdmVydGljYWwtYWxpZ246IHN1Yjtcbn1cbiNzbWFydC10YWJsZXMgbm91aXNsaWRlciB7XG4gIHBhZGRpbmc6IDE2cHggMDtcbn1cbiNzbWFydC10YWJsZXMgLm1hdC1jZWxsIHtcbiAgdmVydGljYWwtYWxpZ246IG1pZGRsZTtcbn1cbiNzbWFydC10YWJsZXMgLm1hdC1jZWxsW2NlbGwtbmFtZT1zdGF0dXNdW2NlbGwtdmFsdWU9Q29tcGxldGVkXSB7XG4gIGNvbG9yOiBibGFjaztcbn1cbiNzbWFydC10YWJsZXMgLm1hdC1jZWxsW2NlbGwtbmFtZT1zdGF0dXNdW2NlbGwtdmFsdWU9XCJJbiBQcm9ncmVzc1wiXSB7XG4gIGNvbG9yOiAjZjhlODFjO1xufVxuI3NtYXJ0LXRhYmxlcyAubWF0LWNlbGxbY2VsbC1uYW1lPXN0YXR1c11bY2VsbC12YWx1ZT1DYW5jZWxsZWRdIHtcbiAgY29sb3I6ICNmZjAwMWY7XG59XG4jc21hcnQtdGFibGVzIC5wYWdpbmF0b3IgLm1hdC1wYWdpbmF0b3ItcGFnZS1zaXplIHtcbiAgYWxpZ24taXRlbXM6IGNlbnRlcjtcbn1cbiNzbWFydC10YWJsZXMgLnBhZ2luYXRvciAubWF0LXBhZ2luYXRvci1wYWdlLXNpemUtbGFiZWwge1xuICBjb2xvcjogYmxhY2s7XG4gIGZvbnQtc2l6ZTogMTRweDtcbiAgbWFyZ2luLWxlZnQ6IDBweDtcbiAgbWFyZ2luLXJpZ2h0OiAxMHB4O1xufVxuI3NtYXJ0LXRhYmxlcyAucGFnaW5hdG9yIC5tYXQtcGFnaW5hdG9yLXBhZ2Utc2l6ZS1zZWxlY3Qge1xuICBtYXJnaW46IDBweDtcbn1cbiNzbWFydC10YWJsZXMgLnBhZ2luYXRvciAubWF0LXBhZ2luYXRvci1wYWdlLXNpemUtc2VsZWN0IC5tYXQtZm9ybS1maWVsZC13cmFwcGVyIHtcbiAgcGFkZGluZzogMHB4O1xuICB0ZXh0LWFsaWduOiBjZW50ZXI7XG59XG4jc21hcnQtdGFibGVzIC5wYWdpbmF0b3IgLm1hdC1wYWdpbmF0b3ItcGFnZS1zaXplLXNlbGVjdCAubWF0LWZvcm0tZmllbGQtd3JhcHBlciAubWF0LWZvcm0tZmllbGQtdW5kZXJsaW5lIHtcbiAgZGlzcGxheTogbm9uZTtcbn1cbiNzbWFydC10YWJsZXMgLnBhZ2luYXRvciAubWF0LXBhZ2luYXRvci1yYW5nZS1hY3Rpb25zIHtcbiAgY29sb3I6ICMzOTQyMDI7XG4gIGZvbnQtc2l6ZTogMTRweDtcbn1cbiNzbWFydC10YWJsZXMgLmZpbHRlci13cmFwcGVyIC5tYXQtZm9ybS1maWVsZCB7XG4gIGZvbnQtc2l6ZTogMTRweDtcbiAgd2lkdGg6IDEwMCU7XG59XG4jc21hcnQtdGFibGVzIC5maWx0ZXItd3JhcHBlciAubWF0LWZvcm0tZmllbGQtdW5kZXJsaW5lIHtcbiAgZGlzcGxheTogaW5oZXJpdDtcbn1cbiNzbWFydC10YWJsZXMgLmJ0bi1jbGVhciB7XG4gIG1hcmdpbi1sZWZ0OiAxNXB4O1xufVxuI3NtYXJ0LXRhYmxlcyAucm93LWlucHV0IHtcbiAgbWFyZ2luOiAxNXB4IDA7XG59XG4jc21hcnQtdGFibGVzIC5idG4ge1xuICBiYWNrZ3JvdW5kLWNvbG9yOiAjM2M2ZDBjO1xuICBjb2xvcjogI2ZmZjtcbiAgZm9udC1zaXplOiAxMnB4O1xuICBmb250LXdlaWdodDogYm9sZDtcbiAgbGV0dGVyLXNwYWNpbmc6IDEuM3B4O1xuICBwYWRkaW5nOiA3cHggMzBweDtcbn1cbiNzbWFydC10YWJsZXMgLmludGVyZXN0cy13cmFwcGVyIC5tYXQtZm9ybS1maWVsZC11bmRlcmxpbmUge1xuICBkaXNwbGF5OiBub25lO1xufVxuI3NtYXJ0LXRhYmxlcyAuaW50ZXJlc3RzLXdyYXBwZXIgLmludGVyZXN0cy1saXN0IC5tYXQtY2hpcC1yZW1vdmUge1xuICBhbGlnbi1zZWxmOiBmbGV4LXN0YXJ0O1xuICBtYXJnaW4tdG9wOiAxcHg7XG59XG5cbi50ZXh0LWNhcmQge1xuICBkaXNwbGF5OiBpbmxpbmUtYmxvY2s7XG59XG5cbi5jYXJkLXN0YXRzIC5jYXJkLWhlYWRlci5jYXJkLWhlYWRlci1pY29uLCAuY2FyZC1zdGF0cyAuY2FyZC1oZWFkZXIuY2FyZC1oZWFkZXItdGV4dCB7XG4gIHRleHQtYWxpZ246IGxlZnQ7XG59XG4uY2FyZC1zdGF0cyAuY2FyZC1oZWFkZXIgLmNhcmQtaWNvbiArIC5jYXJkLXRpdGxlLFxuLmNhcmQtc3RhdHMgLmNhcmQtaGVhZGVyIC5jYXJkLWljb24gKyAuY2FyZC1jYXRlZ29yeSB7XG4gIHBhZGRpbmctdG9wOiAxMHB4O1xuICBmb250LXNpemU6IDMwcHg7XG59XG4uY2FyZC1zdGF0cyAuY2FyZC1oZWFkZXIuY2FyZC1oZWFkZXItaWNvbiAuY2FyZC10aXRsZSwgLmNhcmQtc3RhdHMgLmNhcmQtaGVhZGVyLmNhcmQtaGVhZGVyLXRleHQgLmNhcmQtdGl0bGUsIC5jYXJkLXN0YXRzIC5jYXJkLWhlYWRlci5jYXJkLWhlYWRlci1pY29uIC5jYXJkLWNhdGVnb3J5LCAuY2FyZC1zdGF0cyAuY2FyZC1oZWFkZXIuY2FyZC1oZWFkZXItdGV4dCAuY2FyZC1jYXRlZ29yeSB7XG4gIG1hcmdpbjogMTA7XG59IiwiLyohIG5vdWlzbGlkZXIgLSAxMS4wLjMgLSAyMDE4LTAxLTIxIDE0OjA0OjA3ICovXG4vKiBGdW5jdGlvbmFsIHN0eWxpbmc7XG4gKiBUaGVzZSBzdHlsZXMgYXJlIHJlcXVpcmVkIGZvciBub1VpU2xpZGVyIHRvIGZ1bmN0aW9uLlxuICogWW91IGRvbid0IG5lZWQgdG8gY2hhbmdlIHRoZXNlIHJ1bGVzIHRvIGFwcGx5IHlvdXIgZGVzaWduLlxuICovXG4ubm9VaS10YXJnZXQsXG4ubm9VaS10YXJnZXQgKiB7XG4gIC13ZWJraXQtdG91Y2gtY2FsbG91dDogbm9uZTtcbiAgLXdlYmtpdC10YXAtaGlnaGxpZ2h0LWNvbG9yOiByZ2JhKDAsIDAsIDAsIDApO1xuICAtd2Via2l0LXVzZXItc2VsZWN0OiBub25lO1xuICAtbXMtdG91Y2gtYWN0aW9uOiBub25lO1xuICB0b3VjaC1hY3Rpb246IG5vbmU7XG4gIC1tcy11c2VyLXNlbGVjdDogbm9uZTtcbiAgLW1vei11c2VyLXNlbGVjdDogbm9uZTtcbiAgdXNlci1zZWxlY3Q6IG5vbmU7XG4gIC1tb3otYm94LXNpemluZzogYm9yZGVyLWJveDtcbiAgYm94LXNpemluZzogYm9yZGVyLWJveDtcbn1cbi5ub1VpLXRhcmdldCB7XG4gIHBvc2l0aW9uOiByZWxhdGl2ZTtcbiAgZGlyZWN0aW9uOiBsdHI7XG59XG4ubm9VaS1iYXNlLFxuLm5vVWktY29ubmVjdHMge1xuICB3aWR0aDogMTAwJTtcbiAgaGVpZ2h0OiAxMDAlO1xuICBwb3NpdGlvbjogcmVsYXRpdmU7XG4gIHotaW5kZXg6IDE7XG59XG4vKiBXcmFwcGVyIGZvciBhbGwgY29ubmVjdCBlbGVtZW50cy5cbiAqL1xuLm5vVWktY29ubmVjdHMge1xuICBvdmVyZmxvdzogaGlkZGVuO1xuICB6LWluZGV4OiAwO1xufVxuLm5vVWktY29ubmVjdCxcbi5ub1VpLW9yaWdpbiB7XG4gIHdpbGwtY2hhbmdlOiB0cmFuc2Zvcm07XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgei1pbmRleDogMTtcbiAgdG9wOiAwO1xuICBsZWZ0OiAwO1xuICBoZWlnaHQ6IDEwMCU7XG4gIHdpZHRoOiAxMDAlO1xuICAtd2Via2l0LXRyYW5zZm9ybS1vcmlnaW46IDAgMDtcbiAgdHJhbnNmb3JtLW9yaWdpbjogMCAwO1xufVxuLyogT2Zmc2V0IGRpcmVjdGlvblxuICovXG5odG1sOm5vdChbZGlyPVwicnRsXCJdKSAubm9VaS1ob3Jpem9udGFsIC5ub1VpLW9yaWdpbiB7XG4gIGxlZnQ6IGF1dG87XG4gIHJpZ2h0OiAwO1xufVxuLyogR2l2ZSBvcmlnaW5zIDAgaGVpZ2h0L3dpZHRoIHNvIHRoZXkgZG9uJ3QgaW50ZXJmZXJlIHdpdGggY2xpY2tpbmcgdGhlXG4gKiBjb25uZWN0IGVsZW1lbnRzLlxuICovXG4ubm9VaS12ZXJ0aWNhbCAubm9VaS1vcmlnaW4ge1xuICB3aWR0aDogMDtcbn1cbi5ub1VpLWhvcml6b250YWwgLm5vVWktb3JpZ2luIHtcbiAgaGVpZ2h0OiAwO1xufVxuLm5vVWktaGFuZGxlIHtcbiAgcG9zaXRpb246IGFic29sdXRlO1xufVxuLm5vVWktc3RhdGUtdGFwIC5ub1VpLWNvbm5lY3QsXG4ubm9VaS1zdGF0ZS10YXAgLm5vVWktb3JpZ2luIHtcbiAgLXdlYmtpdC10cmFuc2l0aW9uOiB0cmFuc2Zvcm0gMC4zcztcbiAgdHJhbnNpdGlvbjogdHJhbnNmb3JtIDAuM3M7XG59XG4ubm9VaS1zdGF0ZS1kcmFnICoge1xuICBjdXJzb3I6IGluaGVyaXQgIWltcG9ydGFudDtcbn1cbi8qIFNsaWRlciBzaXplIGFuZCBoYW5kbGUgcGxhY2VtZW50O1xuICovXG4ubm9VaS1ob3Jpem9udGFsIHtcbiAgaGVpZ2h0OiAxOHB4O1xufVxuLm5vVWktaG9yaXpvbnRhbCAubm9VaS1oYW5kbGUge1xuICB3aWR0aDogMzRweDtcbiAgaGVpZ2h0OiAyOHB4O1xuICBsZWZ0OiAtMTdweDtcbiAgdG9wOiAtNnB4O1xufVxuLm5vVWktdmVydGljYWwge1xuICB3aWR0aDogMThweDtcbn1cbi5ub1VpLXZlcnRpY2FsIC5ub1VpLWhhbmRsZSB7XG4gIHdpZHRoOiAyOHB4O1xuICBoZWlnaHQ6IDM0cHg7XG4gIGxlZnQ6IC02cHg7XG4gIHRvcDogLTE3cHg7XG59XG5odG1sOm5vdChbZGlyPVwicnRsXCJdKSAubm9VaS1ob3Jpem9udGFsIC5ub1VpLWhhbmRsZSB7XG4gIHJpZ2h0OiAtMTdweDtcbiAgbGVmdDogYXV0bztcbn1cbi8qIFN0eWxpbmc7XG4gKiBHaXZpbmcgdGhlIGNvbm5lY3QgZWxlbWVudCBhIGJvcmRlciByYWRpdXMgY2F1c2VzIGlzc3VlcyB3aXRoIHVzaW5nIHRyYW5zZm9ybTogc2NhbGVcbiAqL1xuLm5vVWktdGFyZ2V0IHtcbiAgYmFja2dyb3VuZDogI0ZBRkFGQTtcbiAgYm9yZGVyLXJhZGl1czogNHB4O1xuICBib3JkZXI6IDFweCBzb2xpZCAjRDNEM0QzO1xuICBib3gtc2hhZG93OiBpbnNldCAwIDFweCAxcHggI0YwRjBGMCwgMCAzcHggNnB4IC01cHggI0JCQjtcbn1cbi5ub1VpLWNvbm5lY3RzIHtcbiAgYm9yZGVyLXJhZGl1czogM3B4O1xufVxuLm5vVWktY29ubmVjdCB7XG4gIGJhY2tncm91bmQ6ICMzRkI4QUY7XG59XG4vKiBIYW5kbGVzIGFuZCBjdXJzb3JzO1xuICovXG4ubm9VaS1kcmFnZ2FibGUge1xuICBjdXJzb3I6IGV3LXJlc2l6ZTtcbn1cbi5ub1VpLXZlcnRpY2FsIC5ub1VpLWRyYWdnYWJsZSB7XG4gIGN1cnNvcjogbnMtcmVzaXplO1xufVxuLm5vVWktaGFuZGxlIHtcbiAgYm9yZGVyOiAxcHggc29saWQgI0Q5RDlEOTtcbiAgYm9yZGVyLXJhZGl1czogM3B4O1xuICBiYWNrZ3JvdW5kOiAjRkZGO1xuICBjdXJzb3I6IGRlZmF1bHQ7XG4gIGJveC1zaGFkb3c6IGluc2V0IDAgMCAxcHggI0ZGRiwgaW5zZXQgMCAxcHggN3B4ICNFQkVCRUIsIDAgM3B4IDZweCAtM3B4ICNCQkI7XG59XG4ubm9VaS1hY3RpdmUge1xuICBib3gtc2hhZG93OiBpbnNldCAwIDAgMXB4ICNGRkYsIGluc2V0IDAgMXB4IDdweCAjRERELCAwIDNweCA2cHggLTNweCAjQkJCO1xufVxuLyogSGFuZGxlIHN0cmlwZXM7XG4gKi9cbi5ub1VpLWhhbmRsZTpiZWZvcmUsXG4ubm9VaS1oYW5kbGU6YWZ0ZXIge1xuICBjb250ZW50OiBcIlwiO1xuICBkaXNwbGF5OiBibG9jaztcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICBoZWlnaHQ6IDE0cHg7XG4gIHdpZHRoOiAxcHg7XG4gIGJhY2tncm91bmQ6ICNFOEU3RTY7XG4gIGxlZnQ6IDE0cHg7XG4gIHRvcDogNnB4O1xufVxuLm5vVWktaGFuZGxlOmFmdGVyIHtcbiAgbGVmdDogMTdweDtcbn1cbi5ub1VpLXZlcnRpY2FsIC5ub1VpLWhhbmRsZTpiZWZvcmUsXG4ubm9VaS12ZXJ0aWNhbCAubm9VaS1oYW5kbGU6YWZ0ZXIge1xuICB3aWR0aDogMTRweDtcbiAgaGVpZ2h0OiAxcHg7XG4gIGxlZnQ6IDZweDtcbiAgdG9wOiAxNHB4O1xufVxuLm5vVWktdmVydGljYWwgLm5vVWktaGFuZGxlOmFmdGVyIHtcbiAgdG9wOiAxN3B4O1xufVxuLyogRGlzYWJsZWQgc3RhdGU7XG4gKi9cbltkaXNhYmxlZF0gLm5vVWktY29ubmVjdCB7XG4gIGJhY2tncm91bmQ6ICNCOEI4Qjg7XG59XG5bZGlzYWJsZWRdLm5vVWktdGFyZ2V0LFxuW2Rpc2FibGVkXS5ub1VpLWhhbmRsZSxcbltkaXNhYmxlZF0gLm5vVWktaGFuZGxlIHtcbiAgY3Vyc29yOiBub3QtYWxsb3dlZDtcbn1cbi8qIEJhc2U7XG4gKlxuICovXG4ubm9VaS1waXBzLFxuLm5vVWktcGlwcyAqIHtcbiAgLW1vei1ib3gtc2l6aW5nOiBib3JkZXItYm94O1xuICBib3gtc2l6aW5nOiBib3JkZXItYm94O1xufVxuLm5vVWktcGlwcyB7XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgY29sb3I6ICM5OTk7XG59XG4vKiBWYWx1ZXM7XG4gKlxuICovXG4ubm9VaS12YWx1ZSB7XG4gIHBvc2l0aW9uOiBhYnNvbHV0ZTtcbiAgd2hpdGUtc3BhY2U6IG5vd3JhcDtcbiAgdGV4dC1hbGlnbjogY2VudGVyO1xufVxuLm5vVWktdmFsdWUtc3ViIHtcbiAgY29sb3I6ICNjY2M7XG4gIGZvbnQtc2l6ZTogMTBweDtcbn1cbi8qIE1hcmtpbmdzO1xuICpcbiAqL1xuLm5vVWktbWFya2VyIHtcbiAgcG9zaXRpb246IGFic29sdXRlO1xuICBiYWNrZ3JvdW5kOiAjQ0NDO1xufVxuLm5vVWktbWFya2VyLXN1YiB7XG4gIGJhY2tncm91bmQ6ICNBQUE7XG59XG4ubm9VaS1tYXJrZXItbGFyZ2Uge1xuICBiYWNrZ3JvdW5kOiAjQUFBO1xufVxuLyogSG9yaXpvbnRhbCBsYXlvdXQ7XG4gKlxuICovXG4ubm9VaS1waXBzLWhvcml6b250YWwge1xuICBwYWRkaW5nOiAxMHB4IDA7XG4gIGhlaWdodDogODBweDtcbiAgdG9wOiAxMDAlO1xuICBsZWZ0OiAwO1xuICB3aWR0aDogMTAwJTtcbn1cbi5ub1VpLXZhbHVlLWhvcml6b250YWwge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIDUwJSk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIDUwJSk7XG59XG4ubm9VaS1ydGwgLm5vVWktdmFsdWUtaG9yaXpvbnRhbCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoNTAlLCA1MCUpO1xuICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSg1MCUsIDUwJSk7XG59XG4ubm9VaS1tYXJrZXItaG9yaXpvbnRhbC5ub1VpLW1hcmtlciB7XG4gIG1hcmdpbi1sZWZ0OiAtMXB4O1xuICB3aWR0aDogMnB4O1xuICBoZWlnaHQ6IDVweDtcbn1cbi5ub1VpLW1hcmtlci1ob3Jpem9udGFsLm5vVWktbWFya2VyLXN1YiB7XG4gIGhlaWdodDogMTBweDtcbn1cbi5ub1VpLW1hcmtlci1ob3Jpem9udGFsLm5vVWktbWFya2VyLWxhcmdlIHtcbiAgaGVpZ2h0OiAxNXB4O1xufVxuLyogVmVydGljYWwgbGF5b3V0O1xuICpcbiAqL1xuLm5vVWktcGlwcy12ZXJ0aWNhbCB7XG4gIHBhZGRpbmc6IDAgMTBweDtcbiAgaGVpZ2h0OiAxMDAlO1xuICB0b3A6IDA7XG4gIGxlZnQ6IDEwMCU7XG59XG4ubm9VaS12YWx1ZS12ZXJ0aWNhbCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTUwJSk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIC01MCUsIDApO1xuICBwYWRkaW5nLWxlZnQ6IDI1cHg7XG59XG4ubm9VaS1ydGwgLm5vVWktdmFsdWUtdmVydGljYWwge1xuICAtd2Via2l0LXRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDUwJSk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDUwJSk7XG59XG4ubm9VaS1tYXJrZXItdmVydGljYWwubm9VaS1tYXJrZXIge1xuICB3aWR0aDogNXB4O1xuICBoZWlnaHQ6IDJweDtcbiAgbWFyZ2luLXRvcDogLTFweDtcbn1cbi5ub1VpLW1hcmtlci12ZXJ0aWNhbC5ub1VpLW1hcmtlci1zdWIge1xuICB3aWR0aDogMTBweDtcbn1cbi5ub1VpLW1hcmtlci12ZXJ0aWNhbC5ub1VpLW1hcmtlci1sYXJnZSB7XG4gIHdpZHRoOiAxNXB4O1xufVxuLm5vVWktdG9vbHRpcCB7XG4gIGRpc3BsYXk6IGJsb2NrO1xuICBwb3NpdGlvbjogYWJzb2x1dGU7XG4gIGJvcmRlcjogMXB4IHNvbGlkICNEOUQ5RDk7XG4gIGJvcmRlci1yYWRpdXM6IDNweDtcbiAgYmFja2dyb3VuZDogI2ZmZjtcbiAgY29sb3I6ICMwMDA7XG4gIHBhZGRpbmc6IDVweDtcbiAgdGV4dC1hbGlnbjogY2VudGVyO1xuICB3aGl0ZS1zcGFjZTogbm93cmFwO1xufVxuLm5vVWktaG9yaXpvbnRhbCAubm9VaS10b29sdGlwIHtcbiAgLXdlYmtpdC10cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAwKTtcbiAgdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTUwJSwgMCk7XG4gIGxlZnQ6IDUwJTtcbiAgYm90dG9tOiAxMjAlO1xufVxuLm5vVWktdmVydGljYWwgLm5vVWktdG9vbHRpcCB7XG4gIC13ZWJraXQtdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTUwJSk7XG4gIHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIC01MCUpO1xuICB0b3A6IDUwJTtcbiAgcmlnaHQ6IDEyMCU7XG59XG4iLCJAaW1wb3J0ICcuL19ub3Vpc2xpZGVyJztcblxuLy8gTm9VSVNsaWRlciBvdmVycmlkZVxubm91aXNsaWRlciB7XG4gIGRpc3BsYXk6IGlubGluZS1ibG9jayAhaW1wb3J0YW50O1xuICBtYXJnaW46IDA7XG4gIHZlcnRpY2FsLWFsaWduOiBtaWRkbGU7XG4gIHdpZHRoOiAxMDAlO1xuXG4gIC5ub1VpLWhvcml6b250YWwge1xuICAgIGJhY2tncm91bmQtY29sb3I6ICRncmV5NDtcbiAgICBib3JkZXI6IDA7XG4gICAgYm94LXNoYWRvdzogbm9uZTtcbiAgICBoZWlnaHQ6IDNweDtcblxuICAgIC5ub1VpLWhhbmRsZSB7XG4gICAgICBib3JkZXItY29sb3I6ICRwdXJwbGU7XG4gICAgICBib3JkZXItcmFkaXVzOiA1MCU7XG4gICAgICBoZWlnaHQ6IDE1cHg7XG4gICAgICByaWdodDogLTE1cHggIWltcG9ydGFudDtcbiAgICAgIHdpZHRoOiAxNXB4O1xuXG4gICAgICAmOjpiZWZvcmUsXG4gICAgICAmOjphZnRlciB7XG4gICAgICAgIGNvbnRlbnQ6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIC5ub1VpLXRvb2x0aXAge1xuICAgICAgICBkaXNwbGF5OiBub25lO1xuICAgICAgfVxuXG4gICAgICAmOmhvdmVyIC5ub1VpLXRvb2x0aXAsXG4gICAgICAmOmFjdGl2ZSAubm9VaS10b29sdGlwIHtcbiAgICAgICAgZGlzcGxheTogYmxvY2s7XG4gICAgICB9XG4gICAgfVxuICB9XG5cbiAgLm5vVWktYmFzZSB7XG4gICAgaGVpZ2h0OiAzcHg7XG4gIH1cblxuICAubm9VaS1jb25uZWN0IHtcbiAgICBiYWNrZ3JvdW5kLWNvbG9yOiAkcHVycGxlO1xuICB9XG59XG4iLCIgIEBpbXBvcnQgJy4uLy4uLy4uLy4uL3N0eWxlcy9fdmFyaWFibGVzJztcbiAgQGltcG9ydCAnLi4vLi4vLi4vLi4vc3R5bGVzL190YWJsZXMnO1xuICBAaW1wb3J0ICcuLi8uLi8uLi8uLi9zdHlsZXMvX25vdWlzbGlkZXItb3ZlcnJpZGUnO1xuXG4gICNzbWFydC10YWJsZXMge1xuICAgIC50YWJsZS0xLWZpbHRlcnMge1xuICAgICAgLmRhdGUtaW5wdXQge1xuICAgICAgICBkaXNwbGF5OiBpbmxpbmU7XG4gICAgICAgXG4gICAgICB9XG5cbiAgICAgIC5yZXNldC1kYXRlIHtcbiAgICAgICAgYmFja2dyb3VuZC1jb2xvcjogdHJhbnNwYXJlbnQ7XG4gICAgICAgIGJvcmRlcjogMDtcbiAgICAgICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICAgICAgICBmb250LXNpemU6ICRmb250LXNpemUtbGc7XG4gICAgICAgIHZlcnRpY2FsLWFsaWduOiBzdWI7XG4gICAgICB9XG4gICAgfVxuXG4gICAgbm91aXNsaWRlciB7XG4gICAgICBwYWRkaW5nOiAxNnB4IDA7XG4gICAgfVxuXG4gICAgLm1hdC1jZWxsIHtcbiAgICAgIHZlcnRpY2FsLWFsaWduOiBtaWRkbGU7XG5cbiAgICAgICZbY2VsbC1uYW1lPSdzdGF0dXMnXSB7XG4gICAgICAgICZbY2VsbC12YWx1ZT0nQ29tcGxldGVkJ10ge1xuICAgICAgICAgIGNvbG9yOiBibGFjaztcbiAgICAgICAgfVxuXG4gICAgICAgICZbY2VsbC12YWx1ZT0nSW4gUHJvZ3Jlc3MnXSB7XG4gICAgICAgICAgY29sb3I6ICR5ZWxsb3c7XG4gICAgICAgIH1cblxuICAgICAgICAmW2NlbGwtdmFsdWU9J0NhbmNlbGxlZCddIHtcbiAgICAgICAgICBjb2xvcjogJHJlZDtcbiAgICAgICAgfVxuICAgICAgfVxuICAgIH1cblxuICAgIC5wYWdpbmF0b3Ige1xuXG4gICAgICAvL21hdGVyaWFsIHBhZ2luYXRvclxuICAgICAgLm1hdC1wYWdpbmF0b3ItcGFnZS1zaXplIHtcbiAgICAgICAgYWxpZ24taXRlbXM6IGNlbnRlcjtcbiAgICAgIH1cblxuICAgICAgLm1hdC1wYWdpbmF0b3ItcGFnZS1zaXplLWxhYmVsIHtcbiAgICAgICAgY29sb3I6IGJsYWNrO1xuICAgICAgICBmb250LXNpemU6IDE0cHg7XG4gICAgICAgIG1hcmdpbi1sZWZ0OiAwcHg7XG4gICAgICAgIG1hcmdpbi1yaWdodDogMTBweDtcbiAgICAgIH1cblxuICAgICAgLm1hdC1wYWdpbmF0b3ItcGFnZS1zaXplLXNlbGVjdCB7XG4gICAgICAgIG1hcmdpbjogMHB4O1xuXG4gICAgICAgIC5tYXQtZm9ybS1maWVsZC13cmFwcGVyIHtcbiAgICAgICAgICBwYWRkaW5nOiAwcHg7XG4gICAgICAgICAgdGV4dC1hbGlnbjogY2VudGVyO1xuXG4gICAgICAgICAgLm1hdC1mb3JtLWZpZWxkLXVuZGVybGluZSB7XG4gICAgICAgICAgICBkaXNwbGF5OiBub25lO1xuICAgICAgICAgIH1cbiAgICAgICAgfVxuICAgICAgfVxuXG4gICAgICAubWF0LXBhZ2luYXRvci1yYW5nZS1hY3Rpb25zIHtcbiAgICAgICAgY29sb3I6ICRncmVlbjQ7XG4gICAgICAgIGZvbnQtc2l6ZTogMTRweDtcbiAgICAgIH1cbiAgICB9XG5cbiAgICAuZmlsdGVyLXdyYXBwZXIge1xuICAgICAgLm1hdC1mb3JtLWZpZWxkIHtcbiAgICAgICAgZm9udC1zaXplOiAxNHB4O1xuICAgICAgICB3aWR0aDogMTAwJTtcbiAgICAgIH1cblxuICAgICAgLm1hdC1mb3JtLWZpZWxkLXVuZGVybGluZSB7XG4gICAgICAgIGRpc3BsYXk6IGluaGVyaXQ7XG4gICAgICB9XG4gICAgfVxuXG4gICAgLmJ0bi1jbGVhciB7XG4gICAgICBtYXJnaW4tbGVmdDogMTVweDtcbiAgICB9XG5cbiAgICAucm93LWlucHV0IHtcbiAgICAgIG1hcmdpbjogMTVweCAwO1xuICAgIH1cblxuICAgIC5idG4ge1xuICAgICAgYmFja2dyb3VuZC1jb2xvcjogJGdyZWVuO1xuICAgICAgY29sb3I6ICR3aGl0ZTtcbiAgICAgIGZvbnQtc2l6ZTogJGZvbnQtc2l6ZS14cztcbiAgICAgIGZvbnQtd2VpZ2h0OiBib2xkO1xuICAgICAgbGV0dGVyLXNwYWNpbmc6ICRsZXR0ZXItc3BhY2luZy14eHM7XG4gICAgICBwYWRkaW5nOiA3cHggMzBweDtcbiAgICB9XG5cbiAgICAuaW50ZXJlc3RzLXdyYXBwZXIge1xuICAgICAgLm1hdC1mb3JtLWZpZWxkLXVuZGVybGluZSB7XG4gICAgICAgIGRpc3BsYXk6IG5vbmU7XG4gICAgICB9XG5cbiAgICAgIC5pbnRlcmVzdHMtbGlzdCB7XG4gICAgICAgIC5tYXQtY2hpcC1yZW1vdmUge1xuICAgICAgICAgIGFsaWduLXNlbGY6IGZsZXgtc3RhcnQ7XG4gICAgICAgICAgbWFyZ2luLXRvcDogMXB4O1xuICAgICAgICB9XG4gICAgICB9XG4gICAgfVxuICB9XG5cbiAgLnRleHQtY2FyZCB7XG4gICAgZGlzcGxheTogaW5saW5lLWJsb2NrO1xuICB9XG5cbiAgLmNhcmQtc3RhdHMge1xuICAgIC5jYXJkLWhlYWRlciB7XG5cbiAgICAgICYuY2FyZC1oZWFkZXItaWNvbixcbiAgICAgICYuY2FyZC1oZWFkZXItdGV4dCB7XG4gICAgICAgIHRleHQtYWxpZ246IGxlZnQ7XG4gICAgICB9XG5cbiAgICAgIC5jYXJkLWljb24rLmNhcmQtdGl0bGUsXG4gICAgICAuY2FyZC1pY29uKy5jYXJkLWNhdGVnb3J5IHtcbiAgICAgICAgcGFkZGluZy10b3A6IDEwcHg7XG4gICAgICAgIGZvbnQtc2l6ZTogMzBweDtcbiAgICAgIH1cblxuICAgICAgJi5jYXJkLWhlYWRlci1pY29uIC5jYXJkLXRpdGxlLFxuICAgICAgJi5jYXJkLWhlYWRlci10ZXh0IC5jYXJkLXRpdGxlLFxuICAgICAgJi5jYXJkLWhlYWRlci1pY29uIC5jYXJkLWNhdGVnb3J5LFxuICAgICAgJi5jYXJkLWhlYWRlci10ZXh0IC5jYXJkLWNhdGVnb3J5IHtcbiAgICAgICAgbWFyZ2luOiAxMDtcbiAgICAgIH1cbiAgICB9XG4gIH0iXX0= */");
 
 /***/ })
 

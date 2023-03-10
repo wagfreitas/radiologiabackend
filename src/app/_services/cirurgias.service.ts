@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument } from '@angular/fire/firestore';
+import { AngularFireDatabase } from '@angular/fire/database';
 import 'firebase/firestore';
 import { map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -10,9 +12,13 @@ export class CirurgiasService {
   regCol: AngularFirestoreCollection<any>;
   exaCol: AngularFirestoreCollection<any>;
   itemDoc: AngularFirestoreDocument<any>;
+  registerByFilter: AngularFireDatabase;
 
 
-  constructor(private afs: AngularFirestore) {
+  constructor(
+    private afs: AngularFirestore,
+    private db: AngularFireDatabase
+    ) {
     this.regCol = this.afs.collection<any>('registros');
     this.exaCol = this.afs.collection<any>('exames');
    }
@@ -44,12 +50,23 @@ export class CirurgiasService {
       );
   }
 
+  getByName(nomeMascara: string): Observable<any> {
+    console.log(nomeMascara)
+    return this.afs.collection('mascaras').doc(nomeMascara).valueChanges()
+        
+  }
+
   createMascara(doc, record) {
-    console.log(record)
-    console.log(Object.assign({}, record));
     return this.afs.collection('mascaras').doc(doc).set(JSON.parse(JSON.stringify(Object.assign({}, record))));
   }
 
+  editMascara(doc, record) {
+    return this.afs.collection('mascaras').doc(doc).update(JSON.parse(JSON.stringify(Object.assign({}, record))))
+  }
 
+  deleteMascara(doc) {
+    console.log(doc)
+    return this.afs.collection('mascaras').doc(doc).delete();
+  }
 
 }

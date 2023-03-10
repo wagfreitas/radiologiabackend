@@ -12,8 +12,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CirurgiasService", function() { return CirurgiasService; });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
 /* harmony import */ var _angular_fire_firestore__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/fire/firestore */ "./node_modules/@angular/fire/firestore/index.js");
-/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! firebase/firestore */ "./node_modules/firebase/firestore/dist/index.esm.js");
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm5/operators/index.js");
+/* harmony import */ var _angular_fire_database__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/fire/database */ "./node_modules/@angular/fire/database/index.js");
+/* harmony import */ var firebase_firestore__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! firebase/firestore */ "./node_modules/firebase/firestore/dist/index.esm.js");
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/operators */ "./node_modules/rxjs/_esm5/operators/index.js");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -30,9 +31,11 @@ var __importDefault = (undefined && undefined.__importDefault) || function (mod)
 
 
 
+
 var CirurgiasService = /** @class */ (function () {
-    function CirurgiasService(afs) {
+    function CirurgiasService(afs, db) {
         this.afs = afs;
+        this.db = db;
         this.regCol = this.afs.collection('registros');
         this.exaCol = this.afs.collection('exames');
     }
@@ -52,26 +55,37 @@ var CirurgiasService = /** @class */ (function () {
     CirurgiasService.prototype.getAll = function () {
         return this.afs.collection('registros')
             .snapshotChanges()
-            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_3__["map"])(function (changes) {
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_4__["map"])(function (changes) {
             return changes.map(function (doc) {
                 var data = doc.payload.doc.data();
                 return { data: data };
             });
         }));
     };
+    CirurgiasService.prototype.getByName = function (nomeMascara) {
+        console.log(nomeMascara);
+        return this.afs.collection('mascaras').doc(nomeMascara).valueChanges();
+    };
     CirurgiasService.prototype.createMascara = function (doc, record) {
-        console.log(record);
-        console.log(Object.assign({}, record));
         return this.afs.collection('mascaras').doc(doc).set(JSON.parse(JSON.stringify(Object.assign({}, record))));
     };
+    CirurgiasService.prototype.editMascara = function (doc, record) {
+        return this.afs.collection('mascaras').doc(doc).update(JSON.parse(JSON.stringify(Object.assign({}, record))));
+    };
+    CirurgiasService.prototype.deleteMascara = function (doc) {
+        console.log(doc);
+        return this.afs.collection('mascaras').doc(doc).delete();
+    };
     CirurgiasService.ctorParameters = function () { return [
-        { type: _angular_fire_firestore__WEBPACK_IMPORTED_MODULE_1__["AngularFirestore"] }
+        { type: _angular_fire_firestore__WEBPACK_IMPORTED_MODULE_1__["AngularFirestore"] },
+        { type: _angular_fire_database__WEBPACK_IMPORTED_MODULE_2__["AngularFireDatabase"] }
     ]; };
     CirurgiasService = __decorate([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Injectable"])({
             providedIn: 'root'
         }),
-        __metadata("design:paramtypes", [_angular_fire_firestore__WEBPACK_IMPORTED_MODULE_1__["AngularFirestore"]])
+        __metadata("design:paramtypes", [_angular_fire_firestore__WEBPACK_IMPORTED_MODULE_1__["AngularFirestore"],
+            _angular_fire_database__WEBPACK_IMPORTED_MODULE_2__["AngularFireDatabase"]])
     ], CirurgiasService);
     return CirurgiasService;
 }());

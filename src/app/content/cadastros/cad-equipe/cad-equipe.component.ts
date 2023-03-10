@@ -9,6 +9,7 @@ import { AlertService } from '../../../_services/alert.service';
 import { DatePipe } from '@angular/common';
 import { DadosService } from '../../../_services/dados.service';
 import { validateEventsArray } from '@angular/fire/firestore';
+import Swal from 'sweetalert2' 
 
 
 
