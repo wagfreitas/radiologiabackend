@@ -64,7 +64,7 @@
 /******/
 /******/ 	// script path function
 /******/ 	function jsonpScriptSrc(chunkId) {
-/******/ 		return __webpack_require__.p + "" + ({"app-content-dashboard-dashboard-module":"app-content-dashboard-dashboard-module","common":"common","app-content-cadastros-cadastros-module":"app-content-cadastros-cadastros-module","app-content-exames-exames-module":"app-content-exames-exames-module"}[chunkId]||chunkId) + ".js"
+/******/ 		return __webpack_require__.p + "" + ({"app-content-dashboard-dashboard-module":"app-content-dashboard-dashboard-module","default~app-content-cadastros-cadastros-module~app-content-exames-exames-module":"default~app-content-cadastros-cadastros-module~app-content-exames-exames-module","app-content-cadastros-cadastros-module":"app-content-cadastros-cadastros-module","app-content-exames-exames-module":"app-content-exames-exames-module"}[chunkId]||chunkId) + ".js"
 /******/ 	}
 /******/
 /******/ 	// The require function

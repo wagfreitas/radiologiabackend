@@ -9,17 +9,18 @@ import { BreadcrumbModule } from 'src/app/_layout/breadcrumb/breadcrumb.module';
 import { BlockUIModule } from 'ng-block-ui';
 import { BlockTemplateComponent } from '../../_layout/blockui/block-template.component';
 import { MatchHeightModule } from '../partials/general/match-height/match-height.module';
-import {DatePipe} from '@angular/common';
+import { DatePipe } from '@angular/common';
 
 import { CadEquipeComponent } from './cad-equipe/cad-equipe.component';
 import { MaterialModule } from '../../app-material/material.module';
 import { MascarasComponent } from './mascaras/mascaras.component';
+import { DialogMascarasComponent } from './../../dialogs/dialog-mascaras/dialog-mascaras.component';
 
 
 
 
 @NgModule({
-  declarations: [CadEquipeComponent, MascarasComponent],
+  declarations: [CadEquipeComponent, MascarasComponent, DialogMascarasComponent],
   imports: [
     CommonModule,
     CardModule,
@@ -42,6 +43,9 @@ import { MascarasComponent } from './mascaras/mascaras.component';
         component: MascarasComponent
       }
     ])
+  ],
+  entryComponents: [
+    DialogMascarasComponent
   ],
   providers: [DatePipe],
   exports: [RouterModule]

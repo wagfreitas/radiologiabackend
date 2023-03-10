@@ -8,7 +8,13 @@
           <div *blockUI="'projectInfo'; message: 'Loading'" class="col-md-11">
             <m-card [options]="options">
               <ng-container mCardHeaderTitle>
-                Cadastro de Máscara do Sistema da Imagem Radiologia
+                <div class="col-md-7"> Cadastro de Máscara do Sistema da Imagem Radiologia</div>
+                <div class="col-md-5">
+                  <button (click)="openDialog()">
+                    Mascaras Cadastradas
+                  </button>
+                </div>
+               
               </ng-container>
               <ng-container mCardBody>
                 <form (ngSubmit)="manage(maskForm.value)"

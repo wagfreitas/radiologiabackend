@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>Mascaras Cadastradas</h2>
+
+<div mat-dialog-content>
+    <table [dataSource]="dataSource" class="mat-elevator-z8" mat-table>
+        <ng-container matColumnDef="id">
+            <th *matHeaderCellDef mat-header-cell>Nome da Mascara</th>
+            <td *matCellDef="let element" mat-cell>{{element.id}}</td>
+        </ng-container>
+        <ng-container matColumnDef="action">
+            <th *matHeaderCellDef mat-header-cell>Ação</th>
+            <td *matCellDef="let element" mat-cell>
+                <button (click)="deleteMascara(element)"
+                        color="warm"
+                        mat-icon-button>
+                        <mat-icon>delete</mat-icon>Excluir
+                </button>
+            </td>
+        </ng-container>
+
+        <tr *matHeaderRowDef="displayedColumns" mat-header-row></tr>
+        <tr *matRowDef="let item; columns: displayedColumns" mat-row></tr>
+    </table>
+    <mat-paginator [pageSizeOptions]="[5,10,25,100]" [pageSize]="pageSize" [showFirstLastButtons]="true" (page)="onPageChange($event)"></mat-paginator>
+</div>

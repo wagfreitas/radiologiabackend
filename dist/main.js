@@ -283,7 +283,7 @@ __webpack_require__.r(__webpack_exports__);
 var map = {
 	"../app/content/cadastros/cadastros.module": [
 		"./src/app/content/cadastros/cadastros.module.ts",
-		"common",
+		"default~app-content-cadastros-cadastros-module~app-content-exames-exames-module",
 		"app-content-cadastros-cadastros-module"
 	],
 	"../app/content/dashboard/dashboard.module": [
@@ -292,7 +292,7 @@ var map = {
 	],
 	"../app/content/exames/exames.module": [
 		"./src/app/content/exames/exames.module.ts",
-		"common",
+		"default~app-content-cadastros-cadastros-module~app-content-exames-exames-module",
 		"app-content-exames-exames-module"
 	]
 };

@@ -9,11 +9,8 @@ import {
 } from "@angular/forms";
 import Swal from "sweetalert2";
 import { MatDialog } from "@angular/material";
-import { MatTableDataSource } from "@angular/material";
-import { MatPaginator } from "@angular/material";
-import {User}
+import { DialogMascarasComponent } from "src/app/dialogs/dialog-mascaras/dialog-mascaras.component";
 import { CirurgiasService } from "src/app/_services/cirurgias.service";
-
 
 @Component({
   selector: "app-mascaras",
@@ -21,7 +18,7 @@ import { CirurgiasService } from "src/app/_services/cirurgias.service";
   styleUrls: ["./mascaras.component.css"],
 })
 export class MascarasComponent implements OnInit {
-  displayedColumns: string[] = ['nome', 'actions']
+
 
   submitted = false;
   maskForm: FormGroup;
@@ -32,22 +29,29 @@ export class MascarasComponent implements OnInit {
   dados = [];
   final = {};
   update = false;
+  todasMascaras: any[];
 
   @ViewChild("f", { read: true, static: false }) userProfileForm: NgForm;
 
   constructor(
     private fb: FormBuilder,
-    private exameService: CirurgiasService
+    private exameService: CirurgiasService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
     this.cadMaskForm();
-    this.examesposicao = this.maskForm.get("examesposicao") as FormArray;
+
   }
 
   get f() {
     return this.maskForm.controls;
   }
+
+  openDialog(): void{
+    const dialogRef = this.dialog.open(DialogMascarasComponent)
+  }
+
 
   cadMaskForm() {
     this.maskForm = this.fb.group({
@@ -275,8 +279,6 @@ export class MascarasComponent implements OnInit {
       console.log(res);
       this.clearForm();
     });
-
-   
 
     Swal.fire({
       title: "Máscara Excluida  com Sucesso",

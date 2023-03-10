@@ -38,14 +38,15 @@ export class CirurgiasService {
       });
   }
 
-  getAll() {
-    return this.afs.collection('registros')
+  getAll(): Observable<any[]>{
+    return this.afs.collection('mascaras')
       .snapshotChanges()
       .pipe(
         map(changes => {
           return changes.map(doc => {
             const data = doc.payload.doc.data();
-            return { data}});
+            const id = doc.payload.doc.id
+            return { id}});
         })
       );
   }

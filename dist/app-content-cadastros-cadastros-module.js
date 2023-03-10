@@ -22,7 +22,20 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("<div class=\"app-content content\">\n  <div class=\"content-wrapper\">\n    <div class=\"content-header row mb-1\"></div>\n    <div class=\"content-body\">\n      <!-- Basic form layout section start -->\n      <section id=\"basic-form-layouts\">\n        <div class=\"row\" matchHeight=\"card\">\n          <div *blockUI=\"'projectInfo'; message: 'Loading'\" class=\"col-md-11\">\n            <m-card [options]=\"options\">\n              <ng-container mCardHeaderTitle>\n                Cadastro de Máscara do Sistema da Imagem Radiologia\n              </ng-container>\n              <ng-container mCardBody>\n                <form (ngSubmit)=\"manage(maskForm.value)\"\n                      [formGroup]=\"maskForm\">\n                  <div class=\"form-body\">\n                    <div class=\"row\">\n                      <div class=\"col-md-8\">\n                        <div class=\"form-group\">\n                          <label for=\"nome\">Nome da Máscara *</label>\n                          <input [ngClass]=\"{\n                              'is-invalid': submitted && f.mascara.errors\n                            }\"\n                                 class=\"form-control\"\n                                 formControlName=\"mascara\"\n                                 id=\"mascara\"\n                                 placeholder=\"Nome da Máscara\"\n                                 type=\"text\" />\n                          <small *ngIf=\"submitted && f.mascara.errors\"\n                                 class=\"invalid-feedback\">\n                            <div *ngIf=\"f.mascara.errors.required\">\n                              Nome da máscara é requerido\n                            </div>\n                          </small>\n                        </div>\n                      </div>\n                      <div class=\"col-md-4 botao\">\n                        <button (click)=\"pesquisaMascara(maskForm.value)\"\n                                color=\"primary\"\n                                mat-raised-button\n                                type=\"button\">\n                          <mat-icon>search</mat-icon>Pesquisar\n                        </button>\n                      </div>\n                    </div>\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-map-pin\"></i> POSIÇÃO DO EXAME\n                      (DIREITO, ESQUERDO, COSTAS, FRENTE, ETC)\n                    </h4>\n                    <div formArrayName=\"examesposicao\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                          let item of maskForm.get('examesposicao')['controls'];\n                          let i = index\n                        \">\n                        <div class=\"row\">\n                          <div class=\"col-md-9\">\n                            <div class=\"form-group\">\n                              <label (click)=\"removeItem()\" for=\"exames\">\n                                POSIÇÃO {{ i + 1 }}\n                              </label>\n                              <input class=\"form-control\"\n                                     formControlName=\"exames\"\n                                     id=\"exames\"\n                                     placeholder=\"Posição do Exame\"\n                                     type=\"text\" />\n                              <small *ngIf=\"submitted && f.examesposicao.invalid\"\n                                     class=\"invalid-feedback\">\n                                <div>Dê um valor para a posição criada</div>\n                              </small>\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeExames(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addExames()\" float-right type=\"button\">\n                          + Outra Posição\n                        </button>\n                      </div>\n                    </div>\n                    <hr />\n                    <h4 class=\"form-section\"></h4>\n                    <hr />\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-map-pin\"></i> DESCRIÇOES DE LAUDOS NORMAIS\n                    </h4>\n                    <div formArrayName=\"examesnormais\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                            let item of maskForm.get('examesnormais')['controls'];\n                            let i = index\">\n                        <div class=\"row\">\n                          <div class=\"col-md-9\">\n                            <div class=\"form-group\">\n                              <label (click)=\"removeItem()\" for=\"laudosnormais\">\n                                NORMAL {{ i + 1 }}\n                              </label>\n                              <input class=\"form-control\"\n                                     formControlName=\"laudosnormais\"\n                                     id=\"laudosnormais\"\n                                     placeholder=\"Descriçao para exame normal\"\n                                     type=\"text\" />\n                              <small *ngIf=\"submitted && f.examesnormais.invalid\"\n                                     class=\"invalid-feedback\">\n                                <div>Descreva uma Normalidade</div>\n                              </small>\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeExamesNormais(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addExamesNormais()\"\n                                float-right\n                                type=\"button\">\n                          + Outra Descição Normal\n                        </button>\n                      </div>\n                    </div>\n                    <hr />\n                    <h4 class=\"form-section\"></h4>\n                    <hr />\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-list\"></i> LAUDOS\n                    </h4>\n                    <div formArrayName=\"laudossiglas\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                          let item of maskForm.get('laudossiglas')['controls'];\n                          let i = index\n                        \">\n                        <div class=\"row\">\n                          <div class=\"col-md-2\">\n                            <div class=\"form-group\">\n                              <label for=\"laudos\">Sigla {{ i + 1 }}:</label>\n                              <input class=\"form-control\"\n                                     formControlName=\"laudos\"\n                                     id=\"laudos\"\n                                     placeholder=\"Defina uma sigla\"\n                                     type=\"text\" />\n                              <small *ngIf=\"submitted && f.laudossiglas.invalid\"\n                                     class=\"invalid-feedback\">\n                                <div>\n                                  Os dois campos precisam ser preenchidos\n                                </div>\n                              </small>\n                            </div>\n                          </div>\n                          <div class=\"col-md-7\">\n                            <div class=\"form-group\">\n                              <label for=\"descricao\">Descrição:</label>\n                              <input class=\"form-control\"\n                                     formControlName=\"descricao\"\n                                     id=\"descricao\"\n                                     placeholder=\"Defina uma descrição para a sigla \"\n                                     type=\"text\" />\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeLaudos(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addLaudos()\" float-right type=\"button\">\n                          + Outra Sigla\n                        </button>\n                      </div>\n                    </div>\n\n                    <hr />\n                    <h4 class=\"form-section\"></h4>\n                    <hr />\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-list\"></i> DESCRIÇÕES DE LAUDOS\n                    </h4>\n                    <div formArrayName=\"laudosdesc\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                          let item of maskForm.get('laudosdesc')['controls'];\n                          let i = index\n                        \">\n                        <div class=\"row\">\n                          <div class=\"col-md-9\">\n                            <div class=\"form-group\">\n                              <label for=\"laudosmin\">\n                                Descrição {{ i + 1 }}:\n                              </label>\n                              <input class=\"form-control\"\n                                     formControlName=\"laudosmin\"\n                                     id=\"laudosmin\"\n                                     placeholder=\"Defina um descritivo para o laudo\"\n                                     type=\"text\" />\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeLaudosDesc(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addLaudosDesc()\"\n                                float-right\n                                type=\"button\">\n                          + Outra Descrição\n                        </button>\n                      </div>\n                    </div>\n\n                    <div class=\"form-actions\">\n                      <div *ngIf=\"update\">\n                        <button class=\"btn btn-warning mr-1\" type=\"button\" (click)=\"deletaMascara(maskForm.value)\">\n                          <i class=\"feather ft-x\"></i> Deleta\n                        </button>\n          \n                        <button class=\"btn btn-primary\" type=\"button\" (click)=\"atualizaMascara(maskForm.value)\">\n                          <i class=\"la la-check\"></i> Atualiza\n                        </button>\n                      </div>\n                      <div *ngIf=\"!update\">\n                        <button class=\"btn btn-primary\" type=\"submit\">\n                          <i class=\"la la-check\"></i> Confirma\n                        </button>\n                      </div>\n                     \n                    </div>\n                  </div>\n                </form>\n              </ng-container>\n            </m-card>\n          </div>\n        </div>\n      </section>\n\n      <!-- // Basic form layout section end -->\n    </div>\n  </div>\n</div>\n<!-- ////////////////////////////////////////////////////////////////////////////-->\n");
+/* harmony default export */ __webpack_exports__["default"] = ("<div class=\"app-content content\">\n  <div class=\"content-wrapper\">\n    <div class=\"content-header row mb-1\"></div>\n    <div class=\"content-body\">\n      <!-- Basic form layout section start -->\n      <section id=\"basic-form-layouts\">\n        <div class=\"row\" matchHeight=\"card\">\n          <div *blockUI=\"'projectInfo'; message: 'Loading'\" class=\"col-md-11\">\n            <m-card [options]=\"options\">\n              <ng-container mCardHeaderTitle>\n                <div class=\"col-md-7\"> Cadastro de Máscara do Sistema da Imagem Radiologia</div>\n                <div class=\"col-md-5\">\n                  <button (click)=\"openDialog()\">\n                    Mascaras Cadastradas\n                  </button>\n                </div>\n               \n              </ng-container>\n              <ng-container mCardBody>\n                <form (ngSubmit)=\"manage(maskForm.value)\"\n                      [formGroup]=\"maskForm\">\n                  <div class=\"form-body\">\n                    <div class=\"row\">\n                      <div class=\"col-md-8\">\n                        <div class=\"form-group\">\n                          <label for=\"nome\">Nome da Máscara *</label>\n                          <input [ngClass]=\"{\n                              'is-invalid': submitted && f.mascara.errors\n                            }\"\n                                 class=\"form-control\"\n                                 formControlName=\"mascara\"\n                                 id=\"mascara\"\n                                 placeholder=\"Nome da Máscara\"\n                                 type=\"text\" />\n                          <small *ngIf=\"submitted && f.mascara.errors\"\n                                 class=\"invalid-feedback\">\n                            <div *ngIf=\"f.mascara.errors.required\">\n                              Nome da máscara é requerido\n                            </div>\n                          </small>\n                        </div>\n                      </div>\n                      <div class=\"col-md-4 botao\">\n                        <button (click)=\"pesquisaMascara(maskForm.value)\"\n                                color=\"primary\"\n                                mat-raised-button\n                                type=\"button\">\n                          <mat-icon>search</mat-icon>Pesquisar\n                        </button>\n                      </div>\n                    </div>\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-map-pin\"></i> POSIÇÃO DO EXAME\n                      (DIREITO, ESQUERDO, COSTAS, FRENTE, ETC)\n                    </h4>\n                    <div formArrayName=\"examesposicao\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                          let item of maskForm.get('examesposicao')['controls'];\n                          let i = index\n                        \">\n                        <div class=\"row\">\n                          <div class=\"col-md-9\">\n                            <div class=\"form-group\">\n                              <label (click)=\"removeItem()\" for=\"exames\">\n                                POSIÇÃO {{ i + 1 }}\n                              </label>\n                              <input class=\"form-control\"\n                                     formControlName=\"exames\"\n                                     id=\"exames\"\n                                     placeholder=\"Posição do Exame\"\n                                     type=\"text\" />\n                              <small *ngIf=\"submitted && f.examesposicao.invalid\"\n                                     class=\"invalid-feedback\">\n                                <div>Dê um valor para a posição criada</div>\n                              </small>\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeExames(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addExames()\" float-right type=\"button\">\n                          + Outra Posição\n                        </button>\n                      </div>\n                    </div>\n                    <hr />\n                    <h4 class=\"form-section\"></h4>\n                    <hr />\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-map-pin\"></i> DESCRIÇOES DE LAUDOS NORMAIS\n                    </h4>\n                    <div formArrayName=\"examesnormais\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                            let item of maskForm.get('examesnormais')['controls'];\n                            let i = index\">\n                        <div class=\"row\">\n                          <div class=\"col-md-9\">\n                            <div class=\"form-group\">\n                              <label (click)=\"removeItem()\" for=\"laudosnormais\">\n                                NORMAL {{ i + 1 }}\n                              </label>\n                              <input class=\"form-control\"\n                                     formControlName=\"laudosnormais\"\n                                     id=\"laudosnormais\"\n                                     placeholder=\"Descriçao para exame normal\"\n                                     type=\"text\" />\n                              <small *ngIf=\"submitted && f.examesnormais.invalid\"\n                                     class=\"invalid-feedback\">\n                                <div>Descreva uma Normalidade</div>\n                              </small>\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeExamesNormais(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addExamesNormais()\"\n                                float-right\n                                type=\"button\">\n                          + Outra Descição Normal\n                        </button>\n                      </div>\n                    </div>\n                    <hr />\n                    <h4 class=\"form-section\"></h4>\n                    <hr />\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-list\"></i> LAUDOS\n                    </h4>\n                    <div formArrayName=\"laudossiglas\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                          let item of maskForm.get('laudossiglas')['controls'];\n                          let i = index\n                        \">\n                        <div class=\"row\">\n                          <div class=\"col-md-2\">\n                            <div class=\"form-group\">\n                              <label for=\"laudos\">Sigla {{ i + 1 }}:</label>\n                              <input class=\"form-control\"\n                                     formControlName=\"laudos\"\n                                     id=\"laudos\"\n                                     placeholder=\"Defina uma sigla\"\n                                     type=\"text\" />\n                              <small *ngIf=\"submitted && f.laudossiglas.invalid\"\n                                     class=\"invalid-feedback\">\n                                <div>\n                                  Os dois campos precisam ser preenchidos\n                                </div>\n                              </small>\n                            </div>\n                          </div>\n                          <div class=\"col-md-7\">\n                            <div class=\"form-group\">\n                              <label for=\"descricao\">Descrição:</label>\n                              <input class=\"form-control\"\n                                     formControlName=\"descricao\"\n                                     id=\"descricao\"\n                                     placeholder=\"Defina uma descrição para a sigla \"\n                                     type=\"text\" />\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeLaudos(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addLaudos()\" float-right type=\"button\">\n                          + Outra Sigla\n                        </button>\n                      </div>\n                    </div>\n\n                    <hr />\n                    <h4 class=\"form-section\"></h4>\n                    <hr />\n\n                    <h4 class=\"form-section\">\n                      <i class=\"feather ft-list\"></i> DESCRIÇÕES DE LAUDOS\n                    </h4>\n                    <div formArrayName=\"laudosdesc\">\n                      <div [formGroupName]=\"i\"\n                           *ngFor=\"\n                          let item of maskForm.get('laudosdesc')['controls'];\n                          let i = index\n                        \">\n                        <div class=\"row\">\n                          <div class=\"col-md-9\">\n                            <div class=\"form-group\">\n                              <label for=\"laudosmin\">\n                                Descrição {{ i + 1 }}:\n                              </label>\n                              <input class=\"form-control\"\n                                     formControlName=\"laudosmin\"\n                                     id=\"laudosmin\"\n                                     placeholder=\"Defina um descritivo para o laudo\"\n                                     type=\"text\" />\n                            </div>\n                          </div>\n                          <div class=\"col-md-3\">\n                            <button (click)=\"removeLaudosDesc(i)\"\n                                    *ngIf=\"i > 0\"\n                                    float-right\n                                    type=\"button\">\n                              X\n                            </button>\n                          </div>\n                        </div>\n                      </div>\n                      <div class=\"col-md-3\">\n                        <button (click)=\"addLaudosDesc()\"\n                                float-right\n                                type=\"button\">\n                          + Outra Descrição\n                        </button>\n                      </div>\n                    </div>\n\n                    <div class=\"form-actions\">\n                      <div *ngIf=\"update\">\n                        <button class=\"btn btn-warning mr-1\" type=\"button\" (click)=\"deletaMascara(maskForm.value)\">\n                          <i class=\"feather ft-x\"></i> Deleta\n                        </button>\n          \n                        <button class=\"btn btn-primary\" type=\"button\" (click)=\"atualizaMascara(maskForm.value)\">\n                          <i class=\"la la-check\"></i> Atualiza\n                        </button>\n                      </div>\n                      <div *ngIf=\"!update\">\n                        <button class=\"btn btn-primary\" type=\"submit\">\n                          <i class=\"la la-check\"></i> Confirma\n                        </button>\n                      </div>\n                     \n                    </div>\n                  </div>\n                </form>\n              </ng-container>\n            </m-card>\n          </div>\n        </div>\n      </section>\n\n      <!-- // Basic form layout section end -->\n    </div>\n  </div>\n</div>\n<!-- ////////////////////////////////////////////////////////////////////////////-->\n");
+
+/***/ }),
+
+/***/ "./node_modules/raw-loader/dist/cjs.js!./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.html":
+/*!**************************************************************************************************************!*\
+  !*** ./node_modules/raw-loader/dist/cjs.js!./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.html ***!
+  \**************************************************************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = ("<h2 mat-dialog-title>Mascaras Cadastradas</h2>\n\n<div mat-dialog-content>\n    <table [dataSource]=\"dataSource\" class=\"mat-elevator-z8\" mat-table>\n        <ng-container matColumnDef=\"id\">\n            <th *matHeaderCellDef mat-header-cell>Nome da Mascara</th>\n            <td *matCellDef=\"let element\" mat-cell>{{element.id}}</td>\n        </ng-container>\n        <ng-container matColumnDef=\"action\">\n            <th *matHeaderCellDef mat-header-cell>Ação</th>\n            <td *matCellDef=\"let element\" mat-cell>\n                <button (click)=\"deleteMascara(element)\"\n                        color=\"warm\"\n                        mat-icon-button>\n                        <mat-icon>delete</mat-icon>Excluir\n                </button>\n            </td>\n        </ng-container>\n\n        <tr *matHeaderRowDef=\"displayedColumns\" mat-header-row></tr>\n        <tr *matRowDef=\"let item; columns: displayedColumns\" mat-row></tr>\n    </table>\n    <mat-paginator [pageSizeOptions]=\"[5,10,25,100]\" [pageSize]=\"pageSize\" [showFirstLastButtons]=\"true\" (page)=\"onPageChange($event)\"></mat-paginator>\n</div>\n");
 
 /***/ }),
 
@@ -4528,6 +4541,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _cad_equipe_cad_equipe_component__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./cad-equipe/cad-equipe.component */ "./src/app/content/cadastros/cad-equipe/cad-equipe.component.ts");
 /* harmony import */ var _app_material_material_module__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../../app-material/material.module */ "./src/app/app-material/material.module.ts");
 /* harmony import */ var _mascaras_mascaras_component__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./mascaras/mascaras.component */ "./src/app/content/cadastros/mascaras/mascaras.component.ts");
+/* harmony import */ var _dialogs_dialog_mascaras_dialog_mascaras_component__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./../../dialogs/dialog-mascaras/dialog-mascaras.component */ "./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.ts");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -4551,12 +4565,13 @@ var __importDefault = (undefined && undefined.__importDefault) || function (mod)
 
 
 
+
 var CadastrosModule = /** @class */ (function () {
     function CadastrosModule() {
     }
     CadastrosModule = __decorate([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"])({
-            declarations: [_cad_equipe_cad_equipe_component__WEBPACK_IMPORTED_MODULE_10__["CadEquipeComponent"], _mascaras_mascaras_component__WEBPACK_IMPORTED_MODULE_12__["MascarasComponent"]],
+            declarations: [_cad_equipe_cad_equipe_component__WEBPACK_IMPORTED_MODULE_10__["CadEquipeComponent"], _mascaras_mascaras_component__WEBPACK_IMPORTED_MODULE_12__["MascarasComponent"], _dialogs_dialog_mascaras_dialog_mascaras_component__WEBPACK_IMPORTED_MODULE_13__["DialogMascarasComponent"]],
             imports: [
                 _angular_common__WEBPACK_IMPORTED_MODULE_1__["CommonModule"],
                 _partials_general_card_card_module__WEBPACK_IMPORTED_MODULE_5__["CardModule"],
@@ -4579,6 +4594,9 @@ var CadastrosModule = /** @class */ (function () {
                         component: _mascaras_mascaras_component__WEBPACK_IMPORTED_MODULE_12__["MascarasComponent"]
                     }
                 ])
+            ],
+            entryComponents: [
+                _dialogs_dialog_mascaras_dialog_mascaras_component__WEBPACK_IMPORTED_MODULE_13__["DialogMascarasComponent"]
             ],
             providers: [_angular_common__WEBPACK_IMPORTED_MODULE_1__["DatePipe"]],
             exports: [_angular_router__WEBPACK_IMPORTED_MODULE_2__["RouterModule"]]
@@ -4616,9 +4634,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MascarasComponent", function() { return MascarasComponent; });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
 /* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/forms */ "./node_modules/@angular/forms/fesm5/forms.js");
-/* harmony import */ var src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! src/app/_services/cirurgias.service */ "./src/app/_services/cirurgias.service.ts");
-/* harmony import */ var sweetalert2__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! sweetalert2 */ "./node_modules/sweetalert2/dist/sweetalert2.all.js");
-/* harmony import */ var sweetalert2__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(sweetalert2__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var sweetalert2__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! sweetalert2 */ "./node_modules/sweetalert2/dist/sweetalert2.all.js");
+/* harmony import */ var sweetalert2__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(sweetalert2__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _angular_material__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/material */ "./node_modules/@angular/material/esm5/material.es5.js");
+/* harmony import */ var src_app_dialogs_dialog_mascaras_dialog_mascaras_component__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! src/app/dialogs/dialog-mascaras/dialog-mascaras.component */ "./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.ts");
+/* harmony import */ var src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! src/app/_services/cirurgias.service */ "./src/app/_services/cirurgias.service.ts");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -4635,10 +4655,13 @@ var __importDefault = (undefined && undefined.__importDefault) || function (mod)
 
 
 
+
+
 var MascarasComponent = /** @class */ (function () {
-    function MascarasComponent(fb, exameService) {
+    function MascarasComponent(fb, exameService, dialog) {
         this.fb = fb;
         this.exameService = exameService;
+        this.dialog = dialog;
         this.submitted = false;
         this.dados = [];
         this.final = {};
@@ -4646,7 +4669,6 @@ var MascarasComponent = /** @class */ (function () {
     }
     MascarasComponent.prototype.ngOnInit = function () {
         this.cadMaskForm();
-        this.examesposicao = this.maskForm.get("examesposicao");
     };
     Object.defineProperty(MascarasComponent.prototype, "f", {
         get: function () {
@@ -4655,6 +4677,9 @@ var MascarasComponent = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    MascarasComponent.prototype.openDialog = function () {
+        var dialogRef = this.dialog.open(src_app_dialogs_dialog_mascaras_dialog_mascaras_component__WEBPACK_IMPORTED_MODULE_4__["DialogMascarasComponent"]);
+    };
     MascarasComponent.prototype.cadMaskForm = function () {
         this.maskForm = this.fb.group({
             mascara: ["", _angular_forms__WEBPACK_IMPORTED_MODULE_1__["Validators"].required],
@@ -4675,7 +4700,7 @@ var MascarasComponent = /** @class */ (function () {
                 _this.editLaudosDesc(res);
             }
             else {
-                sweetalert2__WEBPACK_IMPORTED_MODULE_3___default.a.fire({
+                sweetalert2__WEBPACK_IMPORTED_MODULE_2___default.a.fire({
                     title: "Mascara não encontrada",
                 });
                 _this.update = false;
@@ -4809,7 +4834,7 @@ var MascarasComponent = /** @class */ (function () {
                 _this.clearForm();
             });
             this.clearForm();
-            sweetalert2__WEBPACK_IMPORTED_MODULE_3___default.a.fire({
+            sweetalert2__WEBPACK_IMPORTED_MODULE_2___default.a.fire({
                 title: "Máscara Cadastrada com Sucesso",
             });
             this.maskForm.reset();
@@ -4839,7 +4864,7 @@ var MascarasComponent = /** @class */ (function () {
             console.log("retorno", res);
             _this.clearForm();
         });
-        sweetalert2__WEBPACK_IMPORTED_MODULE_3___default.a.fire({
+        sweetalert2__WEBPACK_IMPORTED_MODULE_2___default.a.fire({
             title: "Máscara Atualizada com Sucesso",
         });
         this.maskForm.reset();
@@ -4852,7 +4877,7 @@ var MascarasComponent = /** @class */ (function () {
             console.log(res);
             _this.clearForm();
         });
-        sweetalert2__WEBPACK_IMPORTED_MODULE_3___default.a.fire({
+        sweetalert2__WEBPACK_IMPORTED_MODULE_2___default.a.fire({
             title: "Máscara Excluida  com Sucesso",
         });
         this.maskForm.reset();
@@ -4866,7 +4891,8 @@ var MascarasComponent = /** @class */ (function () {
     };
     MascarasComponent.ctorParameters = function () { return [
         { type: _angular_forms__WEBPACK_IMPORTED_MODULE_1__["FormBuilder"] },
-        { type: src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_2__["CirurgiasService"] }
+        { type: src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_5__["CirurgiasService"] },
+        { type: _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"] }
     ]; };
     __decorate([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewChild"])("f", { read: true, static: false }),
@@ -4879,9 +4905,92 @@ var MascarasComponent = /** @class */ (function () {
             styles: [__importDefault(__webpack_require__(/*! ./mascaras.component.css */ "./src/app/content/cadastros/mascaras/mascaras.component.css")).default]
         }),
         __metadata("design:paramtypes", [_angular_forms__WEBPACK_IMPORTED_MODULE_1__["FormBuilder"],
-            src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_2__["CirurgiasService"]])
+            src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_5__["CirurgiasService"],
+            _angular_material__WEBPACK_IMPORTED_MODULE_3__["MatDialog"]])
     ], MascarasComponent);
     return MascarasComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.css":
+/*!***********************************************************************!*\
+  !*** ./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.css ***!
+  \***********************************************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = ("\n/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiJzcmMvYXBwL2RpYWxvZ3MvZGlhbG9nLW1hc2NhcmFzL2RpYWxvZy1tYXNjYXJhcy5jb21wb25lbnQuY3NzIn0= */");
+
+/***/ }),
+
+/***/ "./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.ts":
+/*!**********************************************************************!*\
+  !*** ./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.ts ***!
+  \**********************************************************************/
+/*! exports provided: DialogMascarasComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DialogMascarasComponent", function() { return DialogMascarasComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var _angular_material_paginator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/material/paginator */ "./node_modules/@angular/material/esm5/paginator.es5.js");
+/* harmony import */ var src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! src/app/_services/cirurgias.service */ "./src/app/_services/cirurgias.service.ts");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __importDefault = (undefined && undefined.__importDefault) || function (mod) {
+  return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+
+
+
+var DialogMascarasComponent = /** @class */ (function () {
+    function DialogMascarasComponent(examesCirurgia) {
+        this.examesCirurgia = examesCirurgia;
+        this.displayedColumns = ["id", "action"];
+        this.pageSize = 10;
+    }
+    DialogMascarasComponent.prototype.ngOnInit = function () {
+        var _this = this;
+        this.examesCirurgia.getAll().subscribe(function (data) {
+            console.log(data);
+            _this.dataSource = data;
+        });
+    };
+    DialogMascarasComponent.prototype.onPageChange = function (event) {
+        this.pageSize = event.pageSize;
+    };
+    DialogMascarasComponent.prototype.deleteMascara = function (element) {
+        this.examesCirurgia.deleteMascara(element.id);
+    };
+    DialogMascarasComponent.ctorParameters = function () { return [
+        { type: src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_2__["CirurgiasService"] }
+    ]; };
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewChild"])(_angular_material_paginator__WEBPACK_IMPORTED_MODULE_1__["MatPaginator"], { static: true }),
+        __metadata("design:type", _angular_material_paginator__WEBPACK_IMPORTED_MODULE_1__["MatPaginator"])
+    ], DialogMascarasComponent.prototype, "paginator", void 0);
+    DialogMascarasComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: "app-dialog-mascaras",
+            template: __importDefault(__webpack_require__(/*! raw-loader!./dialog-mascaras.component.html */ "./node_modules/raw-loader/dist/cjs.js!./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.html")).default,
+            styles: [__importDefault(__webpack_require__(/*! ./dialog-mascaras.component.css */ "./src/app/dialogs/dialog-mascaras/dialog-mascaras.component.css")).default]
+        }),
+        __metadata("design:paramtypes", [src_app_services_cirurgias_service__WEBPACK_IMPORTED_MODULE_2__["CirurgiasService"]])
+    ], DialogMascarasComponent);
+    return DialogMascarasComponent;
 }());
 
 
