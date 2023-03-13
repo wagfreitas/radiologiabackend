@@ -71,10 +71,6 @@ import { AngularFireDatabaseModule } from '@angular/fire/database';
 
 
 
-
-
-
-
 const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
     suppressScrollX: true
 };

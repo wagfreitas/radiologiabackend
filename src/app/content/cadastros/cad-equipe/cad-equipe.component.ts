@@ -1,15 +1,17 @@
+import { Observable } from 'rxjs';
 
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, NgForm } from '@angular/forms';
 import { NgBlockUI, BlockUI } from 'ng-block-ui';
+import { DatePipe } from '@angular/common';
+
 import { AuthService } from '../../../_services/auth.service';
 import { AlertService } from '../../../_services/alert.service';
 //import * as FileSaver from 'file-saver';
-
-import { DatePipe } from '@angular/common';
+import { CirurgiasService } from 'src/app/_services/cirurgias.service';
 import { DadosService } from '../../../_services/dados.service';
-import { validateEventsArray } from '@angular/fire/firestore';
 import Swal from 'sweetalert2' 
+import { Exames } from 'src/app/_interfaces/exames';
 
 
 
@@ -21,7 +23,7 @@ import Swal from 'sweetalert2'
 export class CadEquipeComponent implements OnInit {
   public cadEquipe: FormGroup;
 
-  exames: any= [];
+  exames: any = [];
   equipamentos: any = [];
   unidades: any = [];
   sexos: any = [];
@@ -50,6 +52,7 @@ export class CadEquipeComponent implements OnInit {
   minuto: any;
   segundos: any;
   milsegundos: any;
+  resExames$: Observable<Exames>;
 
 
 
@@ -57,7 +60,8 @@ export class CadEquipeComponent implements OnInit {
     public auth: AuthService,
     private alertService: AlertService,
     private datePipe: DatePipe,
-    private dadoService: DadosService) { }
+    private dadoService: DadosService, 
+    private examesService: CirurgiasService) { }
 
   ngOnInit() {
     this.breadcrumb = {
@@ -80,101 +84,10 @@ export class CadEquipeComponent implements OnInit {
   
     this.cadEquipeForm();
 
+this.examesService.getAll().subscribe(mascaras => {
+ this.exames = mascaras
+})
 
-
-    this.exames = [
-      'ABDOME AGUDO',
-      'ANTEBRACO  DIREITO',
-      'ANTEBRACO ESQUERDO',
-      'ARCO AORTICO',
-      'ART ACROMIOCLAVICULAR DIREITO',
-      'ART ESCAPULOUMERAL DIREITO',
-      'ART ESCAPULOUMERAL ESQUERDO',
-      'ART ESTERNOCLAVICULAR DIREITO',
-      'ART TEMPOROMANDIBULAR BILAT',
-      'ARTICULACAO ACROMIOCLAVICULAR ESQUERDO',
-      'ARTICULACAO ESTERNOCLAVICULAR ESQUERDO',
-      'ARTICULACOES SACROILIACAS',
-      'ARTROGRAFIA',
-      'BACIA',
-      'BRACO DIREITO',
-      'BRACO ESQUERDO',
-      'CALCANEO DIREITO',
-      'CALCANEO ESQUERDO',
-      'CLAVICULA DIREITA',
-      'CLAVICULA ESQUERDA',
-      'CLISTER OPACO DUPLO CONTRASTE',
-      'COLUNA CERVICAL 3 INCIDENCIAS',
-      'COLUNA CERVICAL 5P',
-      'COLUNA CERVICAL FUNC/DINAMICA',
-      'COLUNA DORSAL 2 INCIDENCIAS',
-      'COLUNA DORSOLOMBAR',
-      'COLUNA LOMBOSSACRA 3 INCIDENCIAS',
-      'COLUNA LOMBOSSACRA 5 INCIDENCIAS',
-      'COLUNA LOMBOSSACRA FUNC/DINAMICA',
-      'COLUNA PARA ESCOLIOSE DINAMICA',
-      'COLUNA PARA ESCOLIOSE PA LATERAL',
-      'CONDUTOS AUDITIVOS INTERNOS',
-      'CORACAO VASOS BASE PA LAT',
-      'CORACAO VASOS BASE PA LAT OBLIQ',
-      'COSTELA HEMITORAX DIREITO',
-      'COSTELA HEMITORAX ESQUERDO',
-      'COTOVELO DIREITO',
-      'COTOVELO ESQUERDO',
-      'COXA DIREITA',
-      'COXA ESQUERDA',
-      'CRANIO PA LAT',
-      'CRANIO PA LAT BRETTON',
-      'CRANIO PA LAT OBL BRETTON HIRTZ',
-      'ESCANOMETRIA',
-      'ESOFAGO',
-      'ESQUELETO CRAN COL BACIA MEMBROS',
-      'ESTERNO',
-      'ESTOMAGO E DUODENO',
-      'ESTOMAGO ESOFAGO HIATO DUO EED',
-      'ESTUDO DELGADO DUPLO CONTRA',
-      'JOELHO DIREITO AP LAT AXIAL',
-      'JOELHO DIREITO AP LAT OBL AXIAIS',
-      'JOELHO DIREITO AP LATERAL',
-      'JOELHO ESQUERD AP LAT OBL AXIAIS',
-      'JOELHO ESQUERDO AP LAT AXIAL',
-      'JOELHO ESQUERDO AP LATERAL',
-      'LARINGE',
-      'MAO DIREITA',
-      'MAO ESQUERDA',
-      'MAO/DEDO DIREITO',
-      'MAO/DEDO ESQUERDO',
-      'MASTOIDES',
-      'MAXILAR INFERIOR',
-      'MEDIASTINO',
-      'ORBITAS PA LAT OBL HIRTZ',
-      'ORELHA DIREITA',
-      'ORELHA ESQUERDA',
-      'OSSOS DA FACE',
-      'PATELA DINAMICA DIREITA',
-      'PATELA DINAMICA ESQUERDA',
-      'PE DIREITO',
-      'PE ESQUERDO',
-      'PERNA DIREITA',
-      'PERNA ESQUERDA',
-      'PUNHO DIREITO AP LAT',
-      'PUNHO ESQUERDO AP LAT',
-      'QUADRIL DIREITO',
-      'QUADRIL ESQUERDO',
-      'SACROCOCCIX',
-      'SEIOS FACE 3 POSICOES',
-      'SEIOS FACE FN MN LAT HIRTZ',
-      'SELA TURCA PA LAT BRETTON TOWNE',
-      'TORAX 4P',
-      'TORAX AP',
-      'TORAX APICO LORDOTICA',
-      'TORAX PA LAT OBLIQUAS',
-      'TORAX PA PERFIL',
-      'TORNOZELO DIREITO',
-      'TORNOZELO ESQUERDO',
-      'TRANSITO MORFOLOGIA DO DELGADO',
-
-    ]
 
     this.equipamentos = [
     {id: "CR", label: "Computed Radiography"},

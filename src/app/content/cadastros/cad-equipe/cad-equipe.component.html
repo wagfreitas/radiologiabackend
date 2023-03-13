@@ -1,13 +1,13 @@
 <div class="app-content content">
   <div class="content-wrapper">
     <div class="content-header row mb-1">
-      <app-breadcrumb class="col-12" [breadcrumb]="breadcrumb"></app-breadcrumb>
+      <app-breadcrumb [breadcrumb]="breadcrumb" class="col-12"></app-breadcrumb>
     </div>
     <div class="content-body">
       <!-- Basic form layout section start -->
       <section id="basic-form-layouts">
         <div class="row" matchHeight="card">
-          <div class="col-md-11" *blockUI="'projectInfo'; message: 'Loading'">
+          <div *blockUI="'projectInfo'; message: 'Loading'" class="col-md-11">
             <m-card [options]="options">
               <ng-container mCardHeaderTitle>
                 Cadastro de Exames por Paciente no Sistema
@@ -18,10 +18,10 @@
                     Insira abaixo as informações dos pacientes e seus exames
                   </p>
                 </div>
-                <form
-                  [formGroup]="cadEquipe"
-                  (ngSubmit)="oncadEquipeSubmit(cadEquipe.value)"
-                >
+
+                <form (ngSubmit)="oncadEquipeSubmit(cadEquipe.value)"
+                      [formGroup]="cadEquipe"
+                      class="formulario">
                   <div class="form-body">
                     <h4 class="form-section">
                       <i class="feather ft-user"></i> Informações Pessoais
@@ -30,21 +30,14 @@
                       <div class="col-md-7">
                         <div class="form-group">
                           <label for="nome">Nome *</label>
-                          <input
-                            type="text"
-                            id="nome"
-                            class="form-control"
-                            formControlName="firstName"
-                            placeholder="Nome"
-                            [ngClass]="{
-                              'is-invalid': submitted && f.firstName.errors
-                            }"
-                          />
-                          <small
-                            class="form-text text-muted danger"
-                            *ngIf="submitted && f.firstName.errors"
-                            class="invalid-feedback"
-                          >
+                          <input [ngClass]="{ 'is-invalid': submitted && f.firstName.errors}"
+                                 class="form-control"
+                                 formControlName="firstName"
+                                 id="nome"
+                                 placeholder="Nome"
+                                 type="text" />
+                          <small *ngIf="submitted && f.firstName.errors"
+                                 class="invalid-feedback">
                             <div *ngIf="f.firstName.errors.required">
                               Nome é Requerido
                             </div>
@@ -54,21 +47,15 @@
                       <div class="col-md-2">
                         <div class="form-group">
                           <label for="cpf">CPF *</label>
-                          <input
-                            type="text"
-                            id="cpf"
-                            class="form-control"
-                            formControlName="cpf"
-                            placeholder="CPF"
-                            [ngClass]="{
-                              'is-invalid': submitted && f.cpf.errors
-                            }"
-                          />
-                          <small
-                            class="form-text text-muted danger"
-                            *ngIf="submitted && f.cpf.errors"
-                            class="invalid-feedback"
-                          >
+                          <input [ngClass]="{
+                              'is-invalid': submitted && f.cpf.errors}"
+                                 class="form-control"
+                                 formControlName="cpf"
+                                 id="cpf"
+                                 placeholder="CPF"
+                                 type="text" />
+                          <small *ngIf="submitted && f.cpf.errors"
+                                 class="invalid-feedback">
                             <div *ngIf="f.cpf.errors.required">
                               CPF é requerido
                             </div>
@@ -79,21 +66,15 @@
                         <div class="form-group">
                           <label for="niver">Data Nascimento *</label>
                           <mat-form-field>
-                            <input
-                              matInput
-                              [matDatepicker]="niver"
-                              placeholder="Input disabled"
-                              disabled
-                              formControlName="niver"
-                            />
-                            <mat-datepicker-toggle
-                              matSuffix
-                              [for]="niver"
-                            ></mat-datepicker-toggle>
-                            <mat-datepicker
-                              #niver
-                              disabled="false"
-                            ></mat-datepicker>
+                            <input [matDatepicker]="niver"
+                                   disabled
+                                   formControlName="niver"
+                                   matInput
+                                   placeholder="Input disabled" />
+                            <mat-datepicker-toggle [for]="niver" matSuffix>
+                            </mat-datepicker-toggle>
+                            <mat-datepicker #niver disabled="false">
+                            </mat-datepicker>
                           </mat-form-field>
                         </div>
                       </div>
@@ -102,15 +83,11 @@
                       <div class="col-md-2">
                         <div class="form-group">
                           <label for="sexo">Sexo *</label>
-                          <select
-                            formControlName="sexo"
-                            id="sexo"
-                            class="form-control"
-                          >
-                            <option
-                              *ngFor="let sexo of sexos"
-                              [value]="sexo.id"
-                            >
+                          <select class="form-control"
+                                  formControlName="sexo"
+                                  id="sexo">
+                            <option [value]="sexo.id"
+                                    *ngFor="let sexo of sexos">
                               {{ sexo.label }}
                             </option>
                           </select>
@@ -119,21 +96,16 @@
                       <div class="col-md-3">
                         <div class="form-group">
                           <label for="medico">Nome do Médico *</label>
-                          <input
-                            type="text"
-                            id="medico"
-                            class="form-control"
-                            formControlName="medico"
-                            placeholder="Medico"
-                            [ngClass]="{
+                          <input [ngClass]="{
                               'is-invalid': submitted && f.medico.errors
                             }"
-                          />
-                          <small
-                            class="form-text text-muted danger"
-                            *ngIf="submitted && f.medico.errors"
-                            class="invalid-feedback"
-                          >
+                                 class="form-control"
+                                 formControlName="medico"
+                                 id="medico"
+                                 placeholder="Medico"
+                                 type="text" />
+                          <small *ngIf="submitted && f.medico.errors"
+                                 class="invalid-feedback">
                             <div *ngIf="f.medico.errors.required">
                               Fone é requerido
                             </div>
@@ -143,18 +115,14 @@
                       <div class="col-md-7">
                         <div class="form-group">
                           <label for="exame">Exame *</label>
-                          <select
-                            multiple
-                            formControlName="tipoexame"
-                            id="exame"
-                            class="form-control"
-                          >
-                            <option
-                              *ngFor="let exame of exames"
-                              [ngValue]="exame"
-                              (change)="changeTipoexame($event)"
-                            >
-                              {{ exame }}
+                          <select class="form-control"
+                                  formControlName="tipoexame"
+                                  id="exame"
+                                  multiple>
+                            <option (change)="changeTipoexame($event)"
+                                    [ngValue]="exame"
+                                    *ngFor="let exame of exames">
+                              {{ exame.id }}
                             </option>
                           </select>
                         </div>
@@ -162,18 +130,14 @@
                     </div>
 
                     <div class="row">
-                      <div class="col-md-2">
+                      <div class="col-md-5">
                         <div class="form-group">
                           <label for="equito">Tipo Equipamento *</label>
-                          <select
-                            formControlName="equipamento"
-                            id="equito"
-                            class="form-control"
-                          >
-                            <option
-                              *ngFor="let equito of equipamentos"
-                              [value]="equito.id"
-                            >
+                          <select class="form-control"
+                                  formControlName="equipamento"
+                                  id="equito">
+                            <option [value]="equito.id"
+                                    *ngFor="let equito of equipamentos">
                               {{ equito.label }}
                             </option>
                           </select>
@@ -184,46 +148,33 @@
                         <div class="form-group">
                           <label for="dp3">Data Agendada *</label>
                           <mat-form-field>
-                            <input
-                              matInput
-                              [matDatepicker]="dp3"
-                              placeholder="Input disabled"
-                              disabled
-                              formControlName="data"
-                            />
-                            <mat-datepicker-toggle
-                              matSuffix
-                              [for]="dp3"
-                            ></mat-datepicker-toggle>
-                            <mat-datepicker
-                              #dp3
-                              disabled="false"
-                            ></mat-datepicker>
+                            <input [matDatepicker]="dp3"
+                                   disabled
+                                   formControlName="data"
+                                   matInput
+                                   placeholder="Input disabled" />
+                            <mat-datepicker-toggle [for]="dp3" matSuffix>
+                            </mat-datepicker-toggle>
+                            <mat-datepicker #dp3 disabled="false">
+                            </mat-datepicker>
                           </mat-form-field>
                         </div>
                       </div>
-                    </div>
-
-                    <div class="row">
+                  
                       <div class="col-md-2">
                         <div class="form-group">
                           <label for="hora">Hora *</label>
-                          <input
-                            type="text"
-                            id="hora"
-                            class="form-control"
-                            formControlName="hora"
-                            maxlength="2"
-                            placeholder="08:00"
-                            [ngClass]="{
+                          <input [ngClass]="{
                               'is-invalid': submitted && f.hora.errors
                             }"
-                          />
-                          <small
-                            class="form-text text-muted danger"
-                            *ngIf="submitted && f.hora.errors"
-                            class="invalid-feedback"
-                          >
+                                 class="form-control"
+                                 formControlName="hora"
+                                 id="hora"
+                                 maxlength="2"
+                                 placeholder="08:00"
+                                 type="text" />
+                          <small *ngIf="submitted && f.hora.errors"
+                                 class="invalid-feedback">
                             <div *ngIf="f.hora.errors.required">
                               Data Agendada é Requerido
                             </div>
@@ -234,22 +185,17 @@
                       <div class="col-md-2">
                         <div class="form-group">
                           <label for="min">Min *</label>
-                          <input
-                            type="text"
-                            id="min"
-                            class="form-control"
-                            formControlName="min"
-                            maxlength="2"
-                            placeholder="08:00"
-                            [ngClass]="{
+                          <input [ngClass]="{
                               'is-invalid': submitted && f.min.errors
                             }"
-                          />
-                          <small
-                            class="form-text text-muted danger"
-                            *ngIf="submitted && f.min.errors"
-                            class="invalid-feedback"
-                          >
+                                 class="form-control"
+                                 formControlName="min"
+                                 id="min"
+                                 maxlength="2"
+                                 placeholder="08:00"
+                                 type="text" />
+                          <small *ngIf="submitted && f.min.errors"
+                                 class="invalid-feedback">
                             <div *ngIf="f.min.errors.required">
                               Data Agendada é Requerido
                             </div>
@@ -257,24 +203,23 @@
                         </div>
                       </div>
 
-                      <div class="col-md-2">
+                    </div>
+
+                    <div class="row">
+
+                      <div class="col-md-4">
                         <div class="form-group">
                           <label for="tecnico">Tecnico *</label>
-                          <input
-                            type="text"
-                            id="tecnico"
-                            class="form-control"
-                            formControlName="tecnico"
-                            placeholder="Nome"
-                            [ngClass]="{
+                          <input [ngClass]="{
                               'is-invalid': submitted && f.tecnico.errors
                             }"
-                          />
-                          <small
-                            class="form-text text-muted danger"
-                            *ngIf="submitted && f.tecnico.errors"
-                            class="invalid-feedback"
-                          >
+                                 class="form-control"
+                                 formControlName="tecnico"
+                                 id="tecnico"
+                                 placeholder="Nome"
+                                 type="text" />
+                          <small *ngIf="submitted && f.tecnico.errors"
+                                 class="invalid-feedback">
                             <div *ngIf="f.tecnico.errors.required">Tecnico</div>
                           </small>
                         </div>
@@ -283,15 +228,11 @@
                       <div class="col-md-2">
                         <div class="form-group">
                           <label for="unidade">Unidade *</label>
-                          <select
-                            formControlName="unidade"
-                            id="unidade"
-                            class="form-control"
-                          >
-                            <option
-                              *ngFor="let unidade of unidades"
-                              [value]="unidade.id"
-                            >
+                          <select class="form-control"
+                                  formControlName="unidade"
+                                  id="unidade">
+                            <option [value]="unidade.id"
+                                    *ngFor="let unidade of unidades">
                               {{ unidade.label }}
                             </option>
                           </select>
@@ -300,38 +241,29 @@
                       <div class="col-md-2">
                         <div class="form-group">
                           <label for="unidade">Laudo *</label>
-                          <select
-                            formControlName="laudo"
-                            id="laudo"
-                            class="form-control"
-                          >
-                            <option
-                              *ngFor="let laudo of laudos"
-                              [value]="laudo.id"
-                            >
+                          <select class="form-control"
+                                  formControlName="laudo"
+                                  id="laudo">
+                            <option [value]="laudo.id"
+                                    *ngFor="let laudo of laudos">
                               {{ laudo.label }}
                             </option>
                           </select>
                         </div>
                       </div>
-                      <div class="col-md-2">
+                      <div class="col-md-4">
                         <div class="form-group">
                           <label for="descricao">Desc Exame*</label>
-                          <input
-                            type="text"
-                            id="descricao"
-                            class="form-control"
-                            formControlName="descricao"
-                            placeholder="Descrição"
-                            [ngClass]="{
+                          <input [ngClass]="{
                               'is-invalid': submitted && f.descricao.errors
                             }"
-                          />
-                          <small
-                            class="form-text text-muted danger"
-                            *ngIf="submitted && f.descricao.errors"
-                            class="invalid-feedback"
-                          >
+                                 class="form-control"
+                                 formControlName="descricao"
+                                 id="descricao"
+                                 placeholder="Descrição"
+                                 type="text" />
+                          <small *ngIf="submitted && f.descricao.errors"
+                                 class="invalid-feedback">
                             <div *ngIf="f.descricao.errors.required">
                               Descrição
                             </div>
@@ -341,10 +273,12 @@
                     </div>
                   </div>
                   <div class="form-actions">
-                    <button type="button" class="btn btn-warning mr-1"  (click)="cancela()">
+                    <button (click)="cancela()"
+                            class="btn btn-warning mr-1"
+                            type="button">
                       <i class="feather ft-x"></i> Cancela
                     </button>
-                    <button type="submit" class="btn btn-primary" >
+                    <button class="btn btn-primary" type="submit">
                       <i class="la la-check"></i> Confirma
                     </button>
                   </div>

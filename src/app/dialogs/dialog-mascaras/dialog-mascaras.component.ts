@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from "@angular/core";
 import { MatPaginator } from "@angular/material/paginator";
 import { CirurgiasService } from "src/app/_services/cirurgias.service";
+import { MatTableDataSource } from "@angular/material";
 
 @Component({
   selector: "app-dialog-mascaras",
@@ -9,7 +10,7 @@ import { CirurgiasService } from "src/app/_services/cirurgias.service";
 })
 export class DialogMascarasComponent implements OnInit {
   displayedColumns: string[] = ["id", "action"];
-  dataSource: any[];
+  dataSource =  new MatTableDataSource([]);
   pageSize = 10
 
   @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
@@ -18,9 +19,11 @@ export class DialogMascarasComponent implements OnInit {
 
   ngOnInit(): void {
     this.examesCirurgia.getAll().subscribe((data) => {
-      console.log(data)
-      this.dataSource = data;
+      this.dataSource =  new MatTableDataSource(data);
+      this.dataSource.paginator = this.paginator;
     });
+
+   
   }
 
   onPageChange(event){
