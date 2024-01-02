@@ -124,8 +124,6 @@ export class ListComponent implements OnInit {
 
   applyFilter(filterValue: string) {
     this.dataSource1.filter = filterValue.trim().toLowerCase();
-
-    console.log("filtro", this.dataSource1.data.filter)
     if (this.dataSource1.paginator) {
       this.dataSource1.paginator.firstPage();
     }

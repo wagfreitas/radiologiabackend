@@ -33,7 +33,6 @@ import { PublicLayoutComponent } from './_layout/public-layout/public-layout.com
 import { PrivateLayoutComponent } from './_layout/private-layout/private-layout.component';
 
 import { RegisterComponent } from './register';
-import { SocialSigninComponent } from './social-signin/social-signin.component';
 import { LoginComponent } from './login';
 
 import { ChangelogComponent } from './changelog/changelog.component';
@@ -115,7 +114,6 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         AppNavigationComponent,
         AlertComponent,
         RegisterComponent,
-        SocialSigninComponent,
         LoginComponent,
         ChangelogComponent,
         VerticalnavComponent ,

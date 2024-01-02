@@ -18,8 +18,6 @@ import { CirurgiasService } from "src/app/_services/cirurgias.service";
   styleUrls: ["./mascaras.component.css"],
 })
 export class MascarasComponent implements OnInit {
-
-
   submitted = false;
   maskForm: FormGroup;
   examesposicao: FormArray;

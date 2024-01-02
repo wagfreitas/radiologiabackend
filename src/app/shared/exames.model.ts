@@ -1,6 +1,4 @@
-export default class cadExames {
-
-  $key: string;
+export interface ExamesCadastroInterface {
   firstName: string;
   cpf: string;
   niver: string
@@ -8,10 +6,10 @@ export default class cadExames {
   medico: string;
   exame: string;
   equipamento:string;
-  data: string;
-  hora:string;
+  dataAgenda: string;
   tecnico: string;
   unidade: string;
-  descricao: string;
-
+  laudo: string;
+  descricaoExame: string;
+  convenio: string,
 }

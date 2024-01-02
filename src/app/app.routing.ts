@@ -26,6 +26,7 @@ const appRoutes: Routes = [
     children: [
       { path: 'logout', component: LoginComponent, canActivate: [AuthGuard] },
       { path: 'changelog', component: ChangelogComponent, canActivate: [AuthGuard] },
+      
       { path: 'cadastros', loadChildren: '../app/content/cadastros/cadastros.module#CadastrosModule', canActivate: [AuthGuard]},
       { path: 'dashboard', loadChildren: '../app/content/dashboard/dashboard.module#DashboardModule', canActivate: [AuthGuard]}, 
       { path: 'app', loadChildren: '../app/content/exames/exames.module#ExamesModule', canActivate: [AuthGuard]}

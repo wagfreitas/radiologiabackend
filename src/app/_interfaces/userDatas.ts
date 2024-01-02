@@ -1,3 +1,5 @@
-export interface UserData {
-    id: string 
+export interface CombosInterface {
+    id: string;
+    label: string;
 }
+

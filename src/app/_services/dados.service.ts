@@ -5,7 +5,7 @@ import { AngularFireDatabase, AngularFireList, AngularFireObject } from '@angula
 import 'firebase/firestore';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
-import cadExames from '../shared/exames.model';
+import { ExamesCadastroInterface } from '../shared/exames.model';
 
 
 @Injectable({
@@ -14,7 +14,7 @@ import cadExames from '../shared/exames.model';
 export class DadosService {
   private dbPath = '/exames';
 
-  examesRef: AngularFirestoreCollection<cadExames>;
+  examesRef: AngularFirestoreCollection<ExamesCadastroInterface>;
   //examesRef: AngularFireList<any>;    // Reference to exame data list, its an Observable
   exameRef: AngularFireObject<any>;
 
@@ -54,7 +54,7 @@ export class DadosService {
   });
 }
 
-create(exames: cadExames): any {
+create(exames: ExamesCadastroInterface): any {
   return this.examesRef.add({ ...exames });
 }
 

@@ -1,128 +1,95 @@
-import { Observable } from 'rxjs';
 
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, NgForm } from '@angular/forms';
-import { NgBlockUI, BlockUI } from 'ng-block-ui';
-import { DatePipe } from '@angular/common';
+import { Component, OnInit, ViewChild } from "@angular/core";
+import { FormBuilder, FormGroup, FormControl,  Validators, NgForm } from "@angular/forms";
+import { DatePipe } from "@angular/common";
 
-import { AuthService } from '../../../_services/auth.service';
-import { AlertService } from '../../../_services/alert.service';
+import { AuthService } from "../../../_services/auth.service";
+import { AlertService } from "../../../_services/alert.service";
 //import * as FileSaver from 'file-saver';
-import { CirurgiasService } from 'src/app/_services/cirurgias.service';
-import { DadosService } from '../../../_services/dados.service';
-import Swal from 'sweetalert2' 
-import { Exames } from 'src/app/_interfaces/exames';
-
-
+import { CirurgiasService } from "src/app/_services/cirurgias.service";
+import { DadosService } from "../../../_services/dados.service";
+import Swal from "sweetalert2";
+import { ExamesCadastroInterface } from './../../../_interfaces/exames';
+import { CombosInterface } from './../../../_interfaces/userDatas';
 
 @Component({
-  selector: 'app-cad-equipe',
-  templateUrl: './cad-equipe.component.html',
-  styleUrls: ['./cad-equipe.component.css']
+  selector: "app-cad-equipe",
+  templateUrl: "./cad-equipe.component.html",
+  styleUrls: ["./cad-equipe.component.css"],
 })
 export class CadEquipeComponent implements OnInit {
   public cadEquipe: FormGroup;
+  @ViewChild("f", { read: true, static: false }) userProfileForm: NgForm;
 
-  exames: any = [];
-  equipamentos: any = [];
-  unidades: any = [];
-  sexos: any = [];
-  laudos: any = [];
+
+  exames: ExamesCadastroInterface[] = [];
+  equipamentos:  CombosInterface[]= [];
+  unidades: CombosInterface[]= [];
+  sexos: CombosInterface[] = [];
+  laudos: CombosInterface[] = [];
   formValid = false;
 
-  @ViewChild('f', { read: true, static: false }) userProfileForm: NgForm;
+
 
   model: any = {};
 
-  @BlockUI('projectInfo') blockUIProjectInfo: NgBlockUI;
-  @BlockUI('userProfile') blockUIUserProfile: NgBlockUI;
-
-  options = {
-    minimize: true,
-    reload: false,
-    expand: true,
-    close: true
-  };
-  public breadcrumb: any;
-
   submitted = false;
   loading = false;
-  errorMessage = '';
-  successMessage = '';
+  errorMessage = "";
+  successMessage = "";
   minuto: any;
   segundos: any;
   milsegundos: any;
-  resExames$: Observable<Exames>;
+  resExames$: ExamesCadastroInterface[];
 
-
-
-  constructor(private formBuilder: FormBuilder,
+  constructor(
+    private formBuilder: FormBuilder,
     public auth: AuthService,
     private alertService: AlertService,
     private datePipe: DatePipe,
-    private dadoService: DadosService, 
-    private examesService: CirurgiasService) { }
+    private dadoService: DadosService,
+    private examesService: CirurgiasService
+  ) {}
 
   ngOnInit() {
-    this.breadcrumb = {
-      'mainlabel': 'Cadastro de Exames',
-      'links': [
-        {
-          'name': 'Inicio',
-          'isLink': true,
-          'link': '/changelog'
-        },
-        {
-          'name': 'Cadastros',
-          'isLink': true,
-          'link': '#'
-        }
-
-      ]
-    };
-
-  
+   
     this.cadEquipeForm();
 
-this.examesService.getAll().subscribe(mascaras => {
- this.exames = mascaras
-})
-
+    this.examesService.getAll().subscribe((mascaras) => {
+      this.exames = mascaras;
+    });
 
     this.equipamentos = [
-    {id: "CR", label: "Computed Radiography"},
-    {id: "CT", label: "Computed Tomography"},
-    {id: "MR", label: "Magnetic Resonance"},
-    {id: "US", label: "Ultrasound"},
-    {id: "OT", label: "Other"},
-    {id: "ES", label: "Endoscopy"},
-    {id: "PT", label: "Positron emission tomography (PET)"},
-    {id: "RG", label: "Radiographic imaging (conventional film/screen)"},
-    {id: "XA", label: "X-Ray Angiography"},
-    {id: "DX", label: "Digital Radiography"},
-    {id: "NM", label: "Nuclear Medicine"},
-    {id: "MG", label: "Mammography"}
-  ]
+      { id: "CR", label: "Computed Radiography" },
+      { id: "CT", label: "Computed Tomography" },
+      { id: "MR", label: "Magnetic Resonance" },
+      { id: "US", label: "Ultrasound" },
+      { id: "OT", label: "Other" },
+      { id: "ES", label: "Endoscopy" },
+      { id: "PT", label: "Positron emission tomography (PET)" },
+      { id: "RG", label: "Radiographic imaging (conventional film/screen)" },
+      { id: "XA", label: "X-Ray Angiography" },
+      { id: "DX", label: "Digital Radiography" },
+      { id: "NM", label: "Nuclear Medicine" },
+      { id: "MG", label: "Mammography" },
+    ];
 
-  this.unidades = [
-    {id: "1", label: "Hospital 1"},
-    {id: "2", label: "Hospital 2"},
-    {id: "3", label: "Hospital 3 "},
-  ]
+    this.unidades = [
+      { id: "1", label: "Hospital 1" },
+      { id: "2", label: "Hospital 2" },
+      { id: "3", label: "Hospital 3 " },
+    ];
 
-  this.sexos = [
-    {id: "M", label: "Masculino"},
-    {id: "F", label: "Feminino"},
-    {id: "ND", label: "Não Declarar"},
-  ]
+    this.sexos = [
+      { id: "M",  label: "Masculino" },
+      { id: "F",  label: "Feminino" },
+      { id: "ND", label: "Não Declarar" },
+    ];
 
-  this.laudos = [
-    {id: "S", label: "Com Laudos"},
-    {id: "N", label: "Sem Laudos"}
-  ]
-
-
-
+    this.laudos = [
+      { id: "S", label: "Com Laudos" },
+      { id: "N", label: "Sem Laudos" },
+    ];
   }
 
   get f() {
@@ -131,80 +98,78 @@ this.examesService.getAll().subscribe(mascaras => {
 
   cadEquipeForm() {
     this.cadEquipe = this.formBuilder.group({
-      firstName: ['', Validators.required],
-      observacao: [''],
-      cpf: ['', Validators.required],
-      niver: ['', Validators.required],
-      sexo: ['', Validators.required],
-      medico: ['', Validators.required],
-      tipoexame: ['',Validators.required],
-      equipamento: ['', Validators.required],
-      data: ['', Validators.required],
-      hora: ['', Validators.required],
-      min: ['', Validators.required],
-      tecnico: ['', Validators.required],
-      descricao: ['', Validators.required],
-      unidade: ['', Validators.required],
-      laudo: ['', Validators.required]
-
+      firstName: ["", Validators.required],
+      observacao: [""],
+      idpaciente: ["", Validators.required],
+      niver: ["", Validators.required],
+      sexo: ["", Validators.required],
+      medico: ["", Validators.required],
+      tipoexame: ["", Validators.required],
+      equipamento: ["", Validators.required],
+      data: ["", Validators.required],
+      tecnico: ["", Validators.required],
+      descricao: ["", Validators.required],
+      unidade: ["", Validators.required],
+      laudo: ["", Validators.required],
+      convenio: ["", Validators.required],
     });
   }
 
   // Accessing form control using getters
   get firstName() {
-    return this.cadEquipe.get('firstName');
+    return this.cadEquipe.get("firstName");
   }
 
   get cpf() {
-    return this.cadEquipe.get('cpf');
+    return this.cadEquipe.get("cpf");
   }
 
   get niver() {
-    return this.cadEquipe.get('niver');
+    return this.cadEquipe.get("niver");
   }
 
   get sexo() {
-    return this.cadEquipe.get('sexo');
+    return this.cadEquipe.get("sexo");
   }
 
   // Accessing form control using getters
   get medico() {
-    return this.cadEquipe.get('medico');
+    return this.cadEquipe.get("medico");
   }
 
   get equipamento() {
-    return this.cadEquipe.get('equipamento');
+    return this.cadEquipe.get("equipamento");
   }
 
   // Accessing form control using getters
   get data() {
-    return this.cadEquipe.get('data');
+    return this.cadEquipe.get("data");
   }
 
   get hora() {
-    return this.cadEquipe.get('hora');
+    return this.cadEquipe.get("hora");
   }
   get min() {
-    return this.cadEquipe.get('min');
+    return this.cadEquipe.get("min");
   }
 
   get tecnico() {
-    return this.cadEquipe.get('tecnico');
+    return this.cadEquipe.get("tecnico");
   }
 
   get descricao() {
-    return this.cadEquipe.get('descricao');
+    return this.cadEquipe.get("descricao");
   }
 
   get unidade() {
-    return this.cadEquipe.get('mobileNumber');
+    return this.cadEquipe.get("mobileNumber");
   }
   get tipoexame() {
-    return this.cadEquipe.get('tipoexame');
+    return this.cadEquipe.get("tipoexame");
   }
 
   get laudo() {
-    return this.cadEquipe.get('laudo');
+    return this.cadEquipe.get("laudo");
   }
 
   resetForm() {
@@ -212,86 +177,109 @@ this.examesService.getAll().subscribe(mascaras => {
   }
 
   changeTipoexame(e) {
-    console.log('eee', e )
     this.tipoexame.setValue(e.target.value, {
-      onlySelf: true
-    })
+      onlySelf: true,
+    });
   }
 
   oncadEquipeSubmit(dados: any) {
-    console.log(this.formValid)
-    dados.status = 'Não Baixado';
+    dados.status = "Não Baixado";
     var niver = new Date(this.cadEquipe.value.niver);
-    dados.horaConsulta = this.cadEquipe.value.hora +this.cadEquipe.value.min+'00'
-    dados.meunr = '1.2.6965.20173498.'+ this.datePipe.transform(this.cadEquipe.value.data,"yyyyMMddHHmmss")+"."+this.cadEquipe.value.unidade+
-    this.datePipe.transform(this.cadEquipe.value.data,"sss");
-     var anoNiver =niver.getFullYear();
-     var mesNiver = niver.getMonth()+1;
-     var diaNiver = niver.getDay();
-     var idade = this.idade(anoNiver, mesNiver, diaNiver);
+    dados.horaConsulta =
+      this.cadEquipe.value.hora + this.cadEquipe.value.min + "00";
+    dados.meunr =
+      "1.2.6965.20173498." +
+      this.datePipe.transform(this.cadEquipe.value.data, "yyyyMMddHHmmss") +
+      "." +
+      this.cadEquipe.value.unidade +
+      this.datePipe.transform(this.cadEquipe.value.data, "sss");
+  
+    var idade = this.idade(niver);
 
-    dados.idade = idade
+    dados.idade = idade;
+    console.log(dados.idade)
 
     this.submitted = true;
 
-     if (this.cadEquipe.invalid ) {
-       console.log("formulario nao é valido", this.cadEquipe.value)
+    if (this.cadEquipe.invalid) {
+      console.log("formulario nao é valido", this.cadEquipe.value);
       return;
     } else {
-      
-      this.formValid = true
+      this.formValid = true;
 
-     // console.log("Idade da pessoa ", dados )
-        this.dadoService.create(dados).then(() => {
-          this.alertService.error('Dados Inseridos', true);
-          //  window.location.reload();
-          this.submitted = true;
-         this.resetForm()
-       });
-
+      // console.log("Idade da pessoa ", dados )
+      this.dadoService.create(dados).then(() => {
+        this.alertService.error("Dados Inseridos", true);
+        //  window.location.reload();
+        this.submitted = true;
+        this.resetForm();
+      });
     }
   }
 
-  reloadProjectInfo() {
-    this.blockUIProjectInfo.start('Loading..');
 
-    setTimeout(() => {
-      this.blockUIProjectInfo.stop();
-    }, 2500);
+
+  cancela() {
+    this.cadEquipe.reset();
   }
 
-  cancela(){
-    this.cadEquipe.reset()
-  }
 
-  reloadUserProfile() {
-    this.blockUIUserProfile.start('Loading..');
+  idade(data) {
+    
+    const hoje = new Date();
+    const dataNascimento = new Date(data);
 
-    setTimeout(() => {
-      this.blockUIUserProfile.stop();
-    }, 2500);
-  }
+    let idade = hoje.getFullYear() - dataNascimento.getFullYear();
+    const mesAtual = hoje.getMonth() + 1 ; 
+    const mesNascimento = dataNascimento.getMonth()+1; 
 
-  idade(ano_aniversario, mes_aniversario, dia_aniversario) {
-    var d = new Date;
-        var ano_atual = d.getFullYear();
-        var mes_atual = d.getMonth() + 1;
-        var dia_atual = d.getDate();
-
-
-        var quantos_anos = ano_atual - ano_aniversario;
-        console.log('data que tratamos ', ano_aniversario, mes_aniversario, dia_aniversario);
-
-
-    if (mes_atual < mes_aniversario || mes_atual == mes_aniversario && dia_atual < dia_aniversario) {
-        quantos_anos-1;
+    if (mesAtual < mesNascimento) {
+      idade--;
+    }else if (mesAtual===mesNascimento){
+      const diaAtual = hoje.getDate();
+      const diaNascimento = dataNascimento.getDate();
+      if (diaAtual < diaNascimento){
+        idade--;
+      }
     }
 
-    return quantos_anos < 0 ? 0 : quantos_anos;
-}
+    const meses = (hoje.getMonth()+12) - dataNascimento.getMonth()-1;
+    const dias = hoje.getDate() + (new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate() - dataNascimento.getDate());
+    console.log("idade", idade, meses, dias)
+
+    return {
+      anos: idade,
+      meses: meses, 
+      dias: dias 
+    }
 
 
- /* keyPress(event: any) {
+
+
+   /* var d = new Date();
+    var ano_atual = d.getFullYear();
+    var mes_atual = d.getMonth() + 1;
+    var dia_atual = d.getDate();
+
+    var quantos_anos = ano_atual - ano_aniversario;
+    console.log(
+      "data que tratamos ",
+      ano_aniversario,
+      mes_aniversario,
+      dia_aniversario
+    );
+
+    if (
+      mes_atual < mes_aniversario ||
+      (mes_atual == mes_aniversario && dia_atual < dia_aniversario)
+    ) {
+      quantos_anos - 1;
+    }
+
+    return quantos_anos < 0 ? 0 : quantos_anos;*/
+  }
+
+  /* keyPress(event: any) {
     const pattern = /[0-9\+\-\ ]/;
 
     const inputChar = String.fromCharCode(event.charCode);
