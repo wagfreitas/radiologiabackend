@@ -57,7 +57,7 @@
     "jquery": "^3.5.0",
     "jspdf": "^2.3.1",
     "lodash-es": "^4.17.15",
-    "material-icons": "^0.3.1",
+    "material-icons": "^0.7.7",
     "moment": "2.22.1",
     "ng2-charts": "^2.3.0",
     "ng2-nouislider": "^1.8.2",
